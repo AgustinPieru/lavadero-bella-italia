@@ -220,6 +220,28 @@
   .pill.curso{ background:var(--accent-soft); color:var(--accent); }
   .pill.completado{ background:var(--good-soft); color:var(--good); }
   .pill.cancelado{ background:var(--crit-soft); color:var(--crit); }
+  .pill.pendiente{ background:var(--warn-soft); color:var(--warn); }
+  .pill.aprobada{ background:var(--good-soft); color:var(--good); }
+  .pill.oculta{ background:var(--paper-sunken); color:var(--ink-faint); }
+
+  /* reseñas — turnero público */
+  .reviews-strip{ margin-bottom:24px; }
+  .reviews-score{ display:flex; align-items:baseline; gap:8px; margin-bottom:10px; }
+  .reviews-score .n{ font-family:'Mulish'; font-weight:800; font-size:20px; color:var(--ink); }
+  .reviews-score .stars{ color:var(--accent-warm); font-size:15px; letter-spacing:1px; }
+  .reviews-score .count{ font-size:12.5px; color:var(--ink-faint); }
+  .reviews-list{ display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; }
+  .review-card{
+    flex:0 0 auto; width:200px; background:var(--paper-raised); border:1px solid var(--line); border-radius:10px;
+    padding:12px 14px; font-size:12.5px; color:var(--ink-soft);
+  }
+  .review-card .stars{ color:var(--accent-warm); font-size:12px; letter-spacing:1px; display:block; margin-bottom:5px; }
+  .review-card .who{ display:block; margin-top:8px; font-weight:700; color:var(--ink); font-size:11.5px; }
+
+  /* reseñas — admin */
+  .resena-row{ display:flex; gap:14px; padding:16px 18px; border-bottom:1px solid var(--line); align-items:flex-start; flex-wrap:wrap; }
+  .resena-row:last-child{ border-bottom:none; }
+  .resena-row .stars{ color:var(--accent-warm); font-size:15px; letter-spacing:1px; white-space:nowrap; }
   .linea-badge{ font-family:'IBM Plex Mono'; font-size:11px; border:1px solid var(--line-strong); border-radius:5px; padding:2px 6px; color:var(--ink-faint); }
 
   .price-input{ width:110px; padding:7px 9px; border-radius:6px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font-family:'IBM Plex Mono'; font-size:13px; }
@@ -497,6 +519,54 @@ function gastosDelDia(diaIso){
   });
 })();
 
+// Reseñas: se generan cuando un turno pasa a "completado" (el cliente recibe
+// un link para calificar). Quedan "pendiente" hasta que el admin las aprueba
+// u oculta; solo las "aprobada" se muestran en el turnero público.
+let RESENAS = [
+  { cliente:'Marcelo Ibáñez', vehiculo:'auto', puntaje:5, comentario:'Excelente atención, dejaron el auto impecable y fueron muy rápidos.', diasAtras:2, estado:'aprobada' },
+  { cliente:'Transporte Cordillera SRL', vehiculo:'camion', puntaje:5, comentario:'Siempre puntuales, laburan bien con toda la flota. Recomendados.', diasAtras:3, estado:'aprobada' },
+  { cliente:'Julieta Márquez', vehiculo:'auto', puntaje:4, comentario:'Muy buena atención, tardaron un poco más de lo esperado.', diasAtras:4, estado:'aprobada' },
+  { cliente:'Fletes Bianchi', vehiculo:'camion', puntaje:5, comentario:'', diasAtras:5, estado:'aprobada' },
+  { cliente:'Diego Fernández', vehiculo:'auto', puntaje:4, comentario:'Buen trabajo, precio justo.', diasAtras:6, estado:'aprobada' },
+  { cliente:'Roberto Sánchez', vehiculo:'auto', puntaje:3, comentario:'Bien, nada extraordinario para lo que pagué.', diasAtras:1, estado:'pendiente' },
+  { cliente:'Log-Express SA', vehiculo:'camion', puntaje:2, comentario:'Esta vez tardaron demasiado para lo que necesitábamos, con la flota parada.', diasAtras:1, estado:'pendiente' },
+  { cliente:'Ana Torres', vehiculo:'auto', puntaje:1, comentario:'mensaje repetido mensaje repetido mensaje repetido', diasAtras:8, estado:'oculta' },
+];
+function resenasAprobadas(){ return RESENAS.filter(r=>r.estado==='aprobada'); }
+function promedioResenas(){
+  const ap = resenasAprobadas();
+  if(!ap.length) return 0;
+  return ap.reduce((a,r)=>a+r.puntaje,0) / ap.length;
+}
+function estrellas(n){ const full = Math.round(n); return '★'.repeat(full) + '☆'.repeat(5-full); }
+function fechaResena(diasAtras){
+  const d = new Date(); d.setDate(d.getDate()-diasAtras);
+  return formatFechaCorta(isoDate(d));
+}
+function resenasStripHtml(){
+  const aprobadas = resenasAprobadas();
+  if(!aprobadas.length) return '';
+  const promedio = promedioResenas();
+  const conComentario = aprobadas.filter(r=>r.comentario);
+  return `
+    <div class="reviews-strip">
+      <div class="reviews-score">
+        <span class="n">${promedio.toFixed(1)}</span><span class="stars">${estrellas(promedio)}</span><span class="count">· ${aprobadas.length} reseñas de clientes</span>
+      </div>
+      ${conComentario.length ? `
+        <div class="reviews-list">
+          ${conComentario.slice(0,6).map(r => `
+            <div class="review-card">
+              <span class="stars">${estrellas(r.puntaje)}</span>
+              "${r.comentario}"
+              <span class="who">${r.cliente}</span>
+            </div>`).join('')}
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
 /* ---------------------------------------------------------------- */
 /* VISTA TOGGLE                                                      */
 /* ---------------------------------------------------------------- */
@@ -614,6 +684,7 @@ function stepVehiculo(){
     <div class="btn-row" style="margin-top:${booking.vehiculo?0:8}px">
       <button class="btn btn-primary" ${booking.servicio?'':'disabled'} onclick="goStep(2)">Elegir horario</button>
     </div>
+    <div style="margin-top:28px">${resenasStripHtml()}</div>
   `;
 }
 function pickVehiculo(v){ booking.vehiculo=v; booking.servicio=null; renderStep(); }
@@ -870,6 +941,7 @@ const SECTIONS = [
   { id:'horarios', label:'Horarios y cupos', ic:'🕘' },
   { id:'empresas', label:'Empresas', ic:'🏢' },
   { id:'gastos', label:'Gastos', ic:'🧾' },
+  { id:'resenas', label:'Reseñas', ic:'⭐' },
   { id:'reportes', label:'Reportes', ic:'📊' },
 ];
 let currentSection = 'agenda';
@@ -898,6 +970,7 @@ function renderSection(){
   else if(currentSection==='horarios') main.innerHTML = sectionHorarios();
   else if(currentSection==='empresas') main.innerHTML = sectionEmpresas();
   else if(currentSection==='gastos') main.innerHTML = sectionGastos();
+  else if(currentSection==='resenas') main.innerHTML = sectionResenas();
   else main.innerHTML = sectionReportes();
   if(currentSection==='reportes') drawChart();
 }
@@ -1054,6 +1127,7 @@ function sectionAgenda(){
                   <div style="display:flex;gap:6px;flex-wrap:wrap">
                     <button class="btn-sm" onclick="openOrden(${i})">Orden</button>
                     <button class="btn-sm" onclick="openTurnoModal(${i})">Editar</button>
+                    ${(t.estado==='reservado'||t.estado==='curso') ? `<button class="btn-sm accent" onclick="completarTurno(${i})">Completar</button>` : ''}
                     ${t.estado!=='cancelado' ? `<button class="btn-sm" onclick="cancelarTurno(${i})">Cancelar</button>` : ''}
                   </div>
                 </td>
@@ -1154,6 +1228,12 @@ function saveTurno(i){
   if(editing) turnosDelDia(agendaDiaIso())[i] = turno; else turnosDelDia(agendaDiaIso()).push(turno);
   closeModal();
   toast(editing ? 'Turno actualizado' : 'Turno cargado');
+  if(currentSection==='agenda') renderSection();
+}
+
+function completarTurno(i){
+  turnosDelDia(agendaDiaIso())[i].estado = 'completado';
+  toast('Turno completado — se envió un link de reseña por WhatsApp');
   if(currentSection==='agenda') renderSection();
 }
 
@@ -1651,6 +1731,57 @@ function agregarGasto(){
   toast('Gasto agregado');
 }
 
+function sectionResenas(){
+  const pendientes = RESENAS.filter(r=>r.estado==='pendiente');
+  const aprobadas = resenasAprobadas();
+  const promedio = promedioResenas();
+  const orden = { pendiente:0, aprobada:1, oculta:2 };
+  const ordenadas = [...RESENAS].sort((a,b)=> orden[a.estado]-orden[b.estado] || a.diasAtras-b.diasAtras);
+
+  return `
+    <div class="admin-head"><div><h1>Reseñas</h1><p>Se generan cuando un turno pasa a "Completado". Revisalas antes de que se vean en el turnero.</p></div></div>
+    <div class="stat-row">
+      <div class="stat-tile"><div class="label">PROMEDIO</div><div class="value">${promedio ? promedio.toFixed(1) : '—'}</div><div class="delta">${aprobadas.length} reseñas aprobadas</div></div>
+      <div class="stat-tile"><div class="label">PENDIENTES</div><div class="value">${pendientes.length}</div><div class="delta ${pendientes.length?'warn':''}">${pendientes.length ? 'Esperando revisión' : 'Al día'}</div></div>
+      <div class="stat-tile"><div class="label">TOTAL</div><div class="value">${RESENAS.length}</div><div class="delta">Desde que se activó la función</div></div>
+      <div class="stat-tile"><div class="label">VISIBLES EN EL TURNERO</div><div class="value">${aprobadas.length}</div><div class="delta">Solo las aprobadas</div></div>
+    </div>
+    <div class="panel-card">
+      <div class="head"><div><h3>Todas las reseñas</h3><div class="sub">Pendientes primero</div></div></div>
+      <div class="body">
+        ${ordenadas.map(r => {
+          const idx = RESENAS.indexOf(r);
+          return `
+          <div class="resena-row">
+            <div style="flex:1;min-width:200px">
+              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
+                <span class="stars">${estrellas(r.puntaje)}</span>
+                <span class="chip ${r.vehiculo}">${r.vehiculo==='camion'?'🚛':'🚗'}</span>
+                <strong>${r.cliente}</strong>
+                <span style="font-size:11.5px;color:var(--ink-faint)">${fechaResena(r.diasAtras)}</span>
+              </div>
+              <div style="font-size:13.5px;color:var(--ink-soft)">${r.comentario || '<span style="color:var(--ink-faint)">Sin comentario, solo puntaje.</span>'}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+              <span class="pill ${r.estado}">${ {pendiente:'Pendiente',aprobada:'Aprobada',oculta:'Oculta'}[r.estado] }</span>
+              <div style="display:flex;gap:6px">
+                ${r.estado!=='aprobada' ? `<button class="btn-sm accent" onclick="cambiarEstadoResena(${idx},'aprobada')">Aprobar</button>` : ''}
+                ${r.estado!=='oculta' ? `<button class="btn-sm" onclick="cambiarEstadoResena(${idx},'oculta')">Ocultar</button>` : ''}
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function cambiarEstadoResena(i, nuevoEstado){
+  RESENAS[i].estado = nuevoEstado;
+  toast(nuevoEstado==='aprobada' ? 'Reseña aprobada: ya se ve en el turnero público' : 'Reseña ocultada');
+  if(currentSection==='resenas') renderSection();
+}
+
 /* ---- filtro de fecha de Reportes ---- */
 let reportesPreset = '7d';
 let reportesDesde, reportesHasta;
@@ -1875,3 +2006,4 @@ function drawChart(){
 
 </body>
 </html>
+
