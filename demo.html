@@ -1,0 +1,1877 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turnero Bella Italia</title>
+<meta name="description" content="Demo interactiva del turnero de clientes y el panel administrativo del lavadero.">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Mulish:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  /* Tema claro fijo, a partir de los verdes del isologo (aro verde oscuro,
+     interior blanco, camión en verde medio, ola en celeste-agua). */
+  :root{
+    --paper:#f5faf7;
+    --paper-raised:#ffffff;
+    --paper-sunken:#eaf3ee;
+    --ink:#14261f;
+    --ink-soft:#4b6459;
+    --ink-faint:#84958a;
+    --accent:#1f7a54;
+    --accent-deep:#163d30;
+    --accent-soft:#e2f3ea;
+    --accent-ink:#ffffff;
+    --accent-warm:#d97b3c;
+    --accent-warm-soft:#fbeada;
+    --line:rgba(20,38,31,0.12);
+    --line-strong:rgba(20,38,31,0.22);
+    --shadow: 0 1px 2px rgba(20,38,31,0.06), 0 8px 24px -12px rgba(20,38,31,0.16);
+    --good:#0e7490; --good-soft:#dcf0f5;
+    --warn:#a5680f; --warn-soft:#f7ecd6;
+    --crit:#b3401f; --crit-soft:#f7e0d8;
+  }
+
+  *{ box-sizing:border-box; }
+  body{ background:var(--paper); color:var(--ink); font-family:'Mulish', system-ui, sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased; overflow-x:hidden; }
+  .display{ font-family:'Mulish', system-ui, sans-serif; font-weight:800; letter-spacing:-0.01em; text-wrap:balance; }
+  .mono{ font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums; }
+  button{ font-family:inherit; }
+  :focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  /* ---- app bar ---- */
+  .appbar{
+    position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between;
+    gap:16px; padding:12px 20px; background:color-mix(in srgb, var(--paper) 90%, transparent);
+    backdrop-filter:blur(10px); border-bottom:1px solid var(--line); flex-wrap:wrap;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; font-family:'Mulish'; font-weight:700; font-size:19px; color:var(--accent-deep); }
+  .brand .mark{
+    width:34px; height:34px; border-radius:50%; background:var(--paper-raised); color:var(--accent-deep);
+    display:flex; align-items:center; justify-content:center; font-size:16px; flex:none;
+    border:2.5px solid var(--accent-deep);
+  }
+  .segmented{ display:flex; background:var(--paper-sunken); border-radius:10px; padding:3px; gap:2px; }
+  .segmented button{
+    border:none; background:transparent; padding:8px 16px; border-radius:8px; font-size:13.5px; font-weight:600;
+    color:var(--ink-soft); cursor:pointer; transition:background .15s, color .15s;
+  }
+  .segmented button.active{ background:var(--paper-raised); color:var(--ink); box-shadow:var(--shadow); }
+  .demo-flag{ font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-faint); }
+
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  /* =========================== CLIENTE =========================== */
+  #view-cliente .wrap{ max-width:460px; margin:0 auto; padding:28px 18px 80px; }
+  .steps{ display:flex; gap:6px; margin-bottom:24px; }
+  .steps .seg{ flex:1; height:4px; border-radius:99px; background:var(--line-strong); }
+  .steps .seg.done{ background:var(--accent); }
+  .step-label{ font-family:'IBM Plex Mono'; font-size:11.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent-warm); margin-bottom:6px; }
+  .subhead{ font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-faint); margin:20px 0 10px; padding-top:16px; border-top:1px solid var(--line); }
+  .step-title{ font-size:26px; font-weight:700; margin:0 0 20px; font-family:'Mulish'; }
+
+  .prefill-banner{
+    display:flex; gap:10px; align-items:flex-start; background:var(--accent-soft); border:1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    border-radius:10px; padding:12px 14px; margin-bottom:18px; font-size:13.5px; color:var(--ink);
+  }
+  .prefill-banner strong{ display:block; margin-bottom:2px; }
+
+  .card-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:22px; }
+  .pick-card{
+    border:1.5px solid var(--line); background:var(--paper-raised); border-radius:12px; padding:18px 14px;
+    text-align:center; cursor:pointer; transition:border-color .15s, transform .1s;
+  }
+  .pick-card:hover{ border-color:var(--line-strong); }
+  .pick-card.selected{ border-color:var(--accent); background:var(--accent-soft); }
+  .pick-card .icon{ font-size:26px; display:block; margin-bottom:8px; }
+  .pick-card .name{ font-weight:700; font-size:15px; }
+  .pick-card .hint{ font-size:12px; color:var(--ink-faint); margin-top:2px; }
+
+  .service-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:22px; }
+  .service-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    border:1.5px solid var(--line); background:var(--paper-raised); border-radius:10px; padding:13px 16px; cursor:pointer;
+  }
+  .service-row.selected{ border-color:var(--accent); background:var(--accent-soft); }
+  .service-row .name{ font-weight:600; font-size:14.5px; }
+  .service-row .desc{ font-size:12.5px; color:var(--ink-faint); }
+  .service-row .price{ font-family:'IBM Plex Mono'; font-weight:600; white-space:nowrap; }
+
+  .day-carousel{ display:flex; align-items:center; gap:6px; margin-bottom:16px; }
+  .car-nav{
+    flex:none; width:30px; height:30px; border-radius:50%; border:1.5px solid var(--line); background:var(--paper-raised);
+    color:var(--ink-soft); font-size:16px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .car-nav:hover:not(:disabled){ border-color:var(--line-strong); color:var(--ink); }
+  .car-nav:disabled{ opacity:0.3; cursor:default; }
+  .day-tabs{
+    display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; scrollbar-width:none;
+    scroll-snap-type:x proximity; scroll-behavior:smooth;
+  }
+  .day-tabs::-webkit-scrollbar{ display:none; }
+  .day-tabs button{
+    flex:none; width:56px; padding:9px 4px; border-radius:11px; border:1.5px solid var(--line); background:var(--paper-raised);
+    font-size:12.5px; font-weight:600; color:var(--ink-soft); cursor:pointer; display:flex; flex-direction:column; gap:2px; align-items:center;
+    scroll-snap-align:center;
+  }
+  .day-tabs button .dow{ font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:0.04em; text-transform:uppercase; opacity:.75; }
+  .day-tabs button .num{ font-size:15px; font-weight:800; }
+  .day-tabs button.active{ border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+  .day-tabs button.today .dow{ color:var(--accent-warm); }
+
+  .closed-day{
+    display:flex; flex-direction:column; align-items:center; text-align:center; gap:6px;
+    padding:30px 16px; border:1.5px dashed var(--line-strong); border-radius:12px; margin-bottom:16px; color:var(--ink-soft);
+  }
+  .closed-day .icon{ font-size:24px; }
+
+  .slot-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-bottom:10px; }
+  .slot{
+    position:relative; border:1.5px solid var(--line); background:var(--paper-raised); border-radius:9px;
+    padding:10px 6px; text-align:center; font-family:'IBM Plex Mono'; font-size:13px; cursor:pointer; color:var(--ink);
+  }
+  .slot.selected{ border-color:var(--accent); background:var(--accent); color:var(--accent-ink); }
+  .slot.disabled{ opacity:0.35; cursor:not-allowed; text-decoration:line-through; }
+  .slot .tag{ display:block; font-family:'Mulish'; font-size:9.5px; text-transform:uppercase; letter-spacing:0.05em; margin-top:2px; opacity:.75; }
+  .legend-row{ display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--ink-faint); margin-bottom:24px; }
+  .legend-row span{ display:inline-flex; align-items:center; gap:5px; }
+  .legend-dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12.5px; font-weight:600; color:var(--ink-soft); margin-bottom:5px; }
+  .field input, .field select{
+    width:100%; padding:11px 12px; border-radius:8px; border:1.5px solid var(--line); background:var(--paper-raised);
+    color:var(--ink); font-size:14.5px; font-family:inherit;
+  }
+  .field input:focus, .field select:focus{ border-color:var(--accent); }
+  .field input.chk{ width:auto; padding:0; border:none; background:none; accent-color:var(--accent); }
+  .field label.inline{ display:flex; align-items:center; gap:6px; font-weight:400; margin-bottom:0; color:var(--ink); }
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px; border:none; border-radius:9px;
+    padding:13px 20px; font-weight:700; font-size:14.5px; cursor:pointer; width:100%;
+  }
+  .btn-primary{ background:var(--accent); color:var(--accent-ink); }
+  .btn-primary:disabled{ opacity:0.4; cursor:not-allowed; }
+  .btn-ghost{ background:transparent; color:var(--ink-soft); border:1.5px solid var(--line); }
+  .btn-row{ display:flex; gap:10px; margin-top:22px; }
+  .btn-row .btn-ghost{ width:auto; padding-left:18px; padding-right:18px; }
+
+  .summary-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:20px; box-shadow:var(--shadow); margin-bottom:20px; }
+  .summary-card .row{ display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line); font-size:14px; }
+  .summary-card .row:last-child{ border-bottom:none; }
+  .summary-card .row .k{ color:var(--ink-faint); }
+  .summary-card .row .v{ font-weight:600; }
+
+  .confirm-hero{ text-align:center; padding:12px 0 26px; }
+  .confirm-hero .badge{ width:56px; height:56px; border-radius:50%; background:var(--good-soft); color:var(--good); display:flex; align-items:center; justify-content:center; font-size:26px; margin:0 auto 14px; }
+  .confirm-hero h2{ margin:0 0 6px; font-family:'Mulish'; font-size:26px; }
+  .confirm-hero p{ margin:0; color:var(--ink-soft); font-size:14px; }
+
+  /* =========================== ADMIN =========================== */
+  #view-admin .shell{ display:grid; grid-template-columns:216px 1fr; min-height:calc(100vh - 57px); }
+  @media (max-width:760px){ #view-admin .shell{ grid-template-columns:1fr; } #view-admin .sidebar{ display:none; } #view-admin .mobile-tabs{ display:flex; } }
+  .sidebar{ border-right:1px solid var(--line); padding:18px 12px; display:flex; flex-direction:column; gap:2px; }
+  .sidebar button{
+    display:flex; align-items:center; gap:10px; text-align:left; padding:10px 12px; border-radius:8px; border:none;
+    background:transparent; color:var(--ink-soft); font-size:14px; font-weight:600; cursor:pointer;
+  }
+  .sidebar button.active{ background:var(--accent-soft); color:var(--accent); }
+  .sidebar button .ic{ font-size:16px; width:18px; text-align:center; }
+
+  .mobile-tabs{ display:none; overflow-x:auto; gap:6px; padding:10px 14px; border-bottom:1px solid var(--line); }
+  .mobile-tabs button{ flex:none; padding:8px 12px; border-radius:8px; border:1px solid var(--line); background:var(--paper-raised); font-size:12.5px; font-weight:600; color:var(--ink-soft); }
+  .mobile-tabs button.active{ border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+
+  .admin-main{ padding:24px 26px 80px; max-width:1080px; margin:0 auto; width:100%; min-width:0; }
+  .admin-head{ display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:20px; flex-wrap:wrap; }
+  .admin-head h1{ font-family:'Mulish'; font-size:28px; margin:0; }
+  .admin-head p{ margin:4px 0 0; color:var(--ink-soft); font-size:13.5px; }
+
+  .stat-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:26px; }
+  @media (max-width:720px){ .stat-row{ grid-template-columns:1fr 1fr; } }
+  .stat-tile{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; padding:16px 18px; box-shadow:var(--shadow); }
+  .stat-tile .label{ font-size:12px; color:var(--ink-faint); font-family:'IBM Plex Mono'; letter-spacing:0.03em; }
+  .stat-tile .value{ font-family:'Mulish'; font-size:30px; font-weight:700; margin-top:4px; }
+  .stat-tile .delta{ font-size:12px; margin-top:4px; color:var(--good); }
+  .stat-tile .delta.warn{ color:var(--warn); }
+
+  .panel-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); margin-bottom:20px; overflow:hidden; }
+  .panel-card .head{ display:flex; justify-content:space-between; align-items:center; padding:16px 18px; border-bottom:1px solid var(--line); flex-wrap:wrap; gap:10px; }
+  .panel-card .head h3{ margin:0; font-size:16px; }
+  .panel-card .head .sub{ font-size:12.5px; color:var(--ink-faint); margin-top:2px; }
+  .panel-card .body{ padding:6px 0; }
+  .panel-card .body.pad{ padding:16px 18px; }
+
+  .btn-sm{ border:1px solid var(--line); background:var(--paper-raised); color:var(--ink); padding:7px 13px; border-radius:7px; font-size:12.5px; font-weight:600; cursor:pointer; }
+  .btn-sm.accent{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+
+  table.data{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  table.data th{ text-align:left; padding:9px 18px; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-faint); border-bottom:1px solid var(--line-strong); }
+  table.data td{ padding:11px 18px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  table.data tr:last-child td{ border-bottom:none; }
+  .table-wrap{ overflow-x:auto; }
+
+  .chip{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700; padding:4px 9px; border-radius:99px; }
+  .chip.camion{ background:var(--accent-soft); color:var(--accent); }
+  .chip.auto{ background:var(--accent-warm-soft); color:var(--accent-warm); }
+  .pill{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:99px; }
+  .pill.reservado{ background:var(--warn-soft); color:var(--warn); }
+  .pill.curso{ background:var(--accent-soft); color:var(--accent); }
+  .pill.completado{ background:var(--good-soft); color:var(--good); }
+  .pill.cancelado{ background:var(--crit-soft); color:var(--crit); }
+  .linea-badge{ font-family:'IBM Plex Mono'; font-size:11px; border:1px solid var(--line-strong); border-radius:5px; padding:2px 6px; color:var(--ink-faint); }
+
+  .price-input{ width:110px; padding:7px 9px; border-radius:6px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font-family:'IBM Plex Mono'; font-size:13px; }
+
+  .dow-tabs{ display:flex; gap:8px; flex-wrap:wrap; padding:16px 18px 0; }
+  .dow-tabs button{
+    flex:none; padding:9px 14px; border-radius:10px; border:1.5px solid var(--line); background:var(--paper-raised);
+    font-size:12.5px; font-weight:700; color:var(--ink-soft); cursor:pointer; display:flex; align-items:center; gap:7px;
+  }
+  .dow-tabs button .state{ width:6px; height:6px; border-radius:50%; background:var(--line-strong); }
+  .dow-tabs button.open .state{ background:var(--ink-faint); }
+  .dow-tabs button.active{ border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+  .dow-tabs button.active .state{ background:var(--accent); }
+
+  .slotcfg-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(78px,1fr)); gap:8px; padding:16px 18px; }
+  .slotcfg{
+    border-radius:8px; padding:9px 4px; text-align:center; cursor:pointer; border:1.5px solid transparent;
+    font-family:'IBM Plex Mono'; font-size:12px; user-select:none;
+  }
+  .slotcfg .t{ display:block; font-weight:600; }
+  .slotcfg .m{ display:block; font-size:9.5px; text-transform:uppercase; letter-spacing:0.04em; margin-top:2px; opacity:.85; }
+  .slotcfg.libre{ background:var(--paper-sunken); color:var(--ink-soft); }
+  .slotcfg.camion{ background:var(--accent-soft); color:var(--accent); border-color:color-mix(in srgb, var(--accent) 40%, transparent); }
+  .slotcfg.auto{ background:var(--accent-warm-soft); color:var(--accent-warm); border-color:color-mix(in srgb, var(--accent-warm) 40%, transparent); }
+  .slotcfg.cerrado{ background:var(--crit-soft); color:var(--crit); border-color:color-mix(in srgb, var(--crit) 40%, transparent); text-decoration:line-through; opacity:.85; }
+
+  .gasto-form{ display:grid; grid-template-columns:1.2fr 1fr 1fr auto; gap:10px; padding:16px 18px; border-bottom:1px solid var(--line); align-items:end; }
+  @media (max-width:680px){ .gasto-form{ grid-template-columns:1fr 1fr; } }
+  .gasto-form .field{ margin:0; }
+  .gasto-form label{ display:block; font-size:11.5px; font-weight:600; color:var(--ink-faint); margin-bottom:4px; }
+  .gasto-form input, .gasto-form select{ width:100%; padding:9px 10px; border-radius:7px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font-size:13.5px; }
+
+  .chart-card .body{ padding:18px; }
+  .bars{ display:flex; align-items:flex-end; gap:10px; height:180px; overflow-x:auto; padding-bottom:2px; }
+  .bar-col{ flex:0 0 auto; width:36px; display:flex; flex-direction:column; align-items:center; gap:8px; height:100%; justify-content:flex-end; }
+  .bar-col .bar{ width:100%; max-width:34px; background:var(--accent); border-radius:4px 4px 2px 2px; position:relative; transition:opacity .15s; }
+  .bar-col .bar:hover{ opacity:0.75; }
+  .bar-col .val{ font-family:'IBM Plex Mono'; font-size:11px; color:var(--ink-faint); }
+  .bar-col .lbl{ font-size:11.5px; color:var(--ink-soft); font-weight:600; }
+
+  .split-row{ display:flex; gap:14px; margin-bottom:20px; }
+  .split-card{ flex:1; background:var(--paper-sunken); border-radius:10px; padding:14px 16px; }
+  .split-card .n{ font-family:'Mulish'; font-size:24px; font-weight:700; }
+  .split-card .l{ font-size:12px; color:var(--ink-faint); margin-top:2px; }
+
+  .modal-backdrop{ position:fixed; inset:0; background:rgba(10,16,14,0.55); display:none; align-items:center; justify-content:center; z-index:50; padding:20px; }
+  .modal-backdrop.open{ display:flex; }
+  .modal{ background:var(--paper-raised); border-radius:14px; max-width:420px; width:100%; padding:26px; box-shadow:var(--shadow); max-height:88vh; overflow-y:auto; }
+  .modal.doc{ max-width:640px; }
+  .modal h3{ margin:0 0 4px; font-family:'Mulish'; font-size:22px; }
+  .modal .close{ float:right; background:none; border:none; color:var(--ink-faint); font-size:20px; cursor:pointer; }
+  .ot-row{ display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--line); font-size:13.5px; }
+
+  .doc-letterhead{ display:flex; align-items:flex-start; justify-content:space-between; gap:14px; padding-bottom:14px; margin-bottom:18px; border-bottom:2px solid var(--ink); }
+  .doc-letterhead .brand{ font-family:'Mulish'; font-weight:800; font-size:19px; color:var(--accent-deep); }
+  .doc-letterhead .doc-kind{ font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-faint); margin-top:2px; }
+  .doc-letterhead .meta{ text-align:right; font-size:12.5px; color:var(--ink-soft); }
+  .doc-section-title{ font-size:13px; font-weight:700; margin:20px 0 8px; }
+  .doc-section-title:first-of-type{ margin-top:0; }
+  .doc-summary{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:8px; }
+  .doc-summary .cell{ background:var(--paper-sunken); border-radius:8px; padding:10px 12px; }
+  .doc-summary .cell .l{ font-family:'IBM Plex Mono'; font-size:9.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.03em; }
+  .doc-summary .cell .v{ font-size:16px; font-weight:700; margin-top:2px; }
+  @media (max-width:560px){ .doc-summary{ grid-template-columns:1fr 1fr; } }
+  .doc-note{ font-size:11.5px; color:var(--ink-faint); margin-top:16px; padding-top:12px; border-top:1px dashed var(--line); }
+  .ot-row .k{ color:var(--ink-faint); }
+
+  .toast{
+    position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(12px); opacity:0;
+    background:var(--ink); color:var(--paper); padding:12px 20px; border-radius:10px; font-size:13.5px; font-weight:600;
+    box-shadow:var(--shadow); z-index:60; transition:opacity .2s, transform .2s; pointer-events:none;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; } }
+</style>
+</head>
+<body>
+
+
+<div class="appbar">
+  <div class="brand"><span class="mark">🚛</span>Bella Italia</div>
+  <div class="segmented" role="tablist" aria-label="Vista">
+    <button id="tab-cliente" class="active" onclick="setView('cliente')">Vista cliente</button>
+    <button id="tab-admin" onclick="setView('admin')">Vista lavadero</button>
+  </div>
+  <div class="demo-flag">Demo · datos de ejemplo</div>
+</div>
+
+<!-- ============ VISTA CLIENTE ============ -->
+<div id="view-cliente" class="view active">
+  <div class="wrap">
+
+    <div class="steps">
+      <div class="seg" id="seg1"></div><div class="seg" id="seg2"></div><div class="seg" id="seg3"></div><div class="seg" id="seg4"></div>
+    </div>
+
+    <div id="cliente-content"></div>
+  </div>
+</div>
+
+<!-- ============ VISTA ADMIN ============ -->
+<div id="view-admin" class="view">
+  <div class="mobile-tabs" id="mobile-tabs"></div>
+  <div class="shell">
+    <div class="sidebar" id="sidebar"></div>
+    <div class="admin-main" id="admin-main"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-backdrop" onclick="if(event.target===this) closeModal()">
+  <div class="modal" id="modal-body"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------------------------------------------------------- */
+/* DATA DE EJEMPLO                                                   */
+/* ---------------------------------------------------------------- */
+const SERVICIOS = [
+  { id:'lav-ext', nombre:'Lavado exterior', desc:'Carrocería y cabina', precio:8500, vehiculos:['camion'] },
+  { id:'lav-comp', nombre:'Lavado completo', desc:'Exterior + interior + chasis', precio:14000, vehiculos:['camion'] },
+  { id:'lav-chasis', nombre:'Lavado de chasis', desc:'Bajos y tren rodante', precio:6000, vehiculos:['camion'] },
+  { id:'auto-ext', nombre:'Lavado exterior', desc:'Carrocería y llantas', precio:3500, vehiculos:['auto'] },
+  { id:'auto-comp', nombre:'Lavado completo', desc:'Exterior + interior', precio:5800, vehiculos:['auto'] },
+];
+
+const EMPRESAS = [
+  { nombre:'Transporte Cordillera SRL', cuit:'30-71234567-8', descuento:18, camionesMes:142 },
+  { nombre:'Log-Express SA', cuit:'30-70987654-2', descuento:12, camionesMes:96 },
+  { nombre:'Distribuidora del Sur', cuit:'30-69876543-1', descuento:8, camionesMes:41 },
+  { nombre:'Fletes Bianchi', cuit:'20-34567891-3', descuento:5, camionesMes:19 },
+];
+
+let CLIENTES = [
+  { denominacion:'Marcelo Ibáñez', telefono:'11 5555-1234', cuit:'20-28773311-4', email:'marcelo.ibanez@gmail.com', direccion:'Av. Rivadavia 4820, CABA', vehiculo:'auto', marca:'Volkswagen', modelo:'Amarok', patente:'OT 442 GH' },
+  { denominacion:'Julieta Márquez', telefono:'11 4444-7788', cuit:'27-30112233-5', email:'julieta.marquez@hotmail.com', direccion:'Calle 50 N°1230, La Plata', vehiculo:'auto', marca:'Ford', modelo:'Fiesta', patente:'PQ 205 XA' },
+  { denominacion:'Transporte Cordillera SRL', telefono:'11 4321-0098', cuit:'30-71234567-8', email:'administracion@cordillera.com.ar', direccion:'Parque Industrial, Lote 12, San Justo', vehiculo:'camion', marca:'Scania', modelo:'R450', patente:'AF 204 KL' },
+  { denominacion:'Fletes Bianchi', telefono:'11 2233-4455', cuit:'20-34567891-3', email:'bianchi.fletes@gmail.com', direccion:'Ruta 9 km 45, San Justo', vehiculo:'camion', marca:'Iveco', modelo:'Tector', patente:'AB 733 PL' },
+];
+
+// Configuración de horarios y cupos, INDEPENDIENTE por día de la semana
+// (0=domingo ... 6=sábado, igual que Date.getDay()). Cada día define si el
+// lavadero atiende, en qué franja (desde/hasta) y qué modo tiene cada media
+// hora dentro de esa franja (camión / auto / libre). Esto alimenta tanto el
+// panel admin como el turnero público, así que un cambio acá se ve reflejado
+// en ambos lados de la demo.
+function timeToMinutes(t){ const [h,m] = t.split(':').map(Number); return h*60+m; }
+function minutesToTime(m){ return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+function generateHalfHourSlots(desde, hasta){
+  const out = []; let t = timeToMinutes(desde); const end = timeToMinutes(hasta);
+  while(t < end){ out.push(minutesToTime(t)); t += 30; }
+  return out;
+}
+function buildDefaultModos(desde, hasta, offset){
+  const pattern = ['camion','camion','libre','camion','auto','libre'];
+  const modos = {};
+  generateHalfHourSlots(desde, hasta).forEach((h,i) => modos[h] = pattern[(i+(offset||0)) % pattern.length]);
+  return modos;
+}
+// Marca un tramo puntual como "cerrado" (no se ofrece), ej. un corte de
+// mediodía, sin tener que recortar la franja Desde/Hasta del día entero.
+function conCorte(modos, corteDesde, corteHasta){
+  generateHalfHourSlots(corteDesde, corteHasta).forEach(h => modos[h] = 'cerrado');
+  return modos;
+}
+// Línea B: mismo tipo de configuración que la línea A (franja propia + cupos
+// por franja), pero independiente — el admin elige exactamente qué turnos
+// ofrece la línea B, no tienen por qué ser los mismos horarios ni los mismos
+// cupos que la línea A. Arranca como copia de la línea A (punto de partida
+// razonable) y se puede editar aparte.
+function defaultLineaB(desde, hasta){
+  return { desde, hasta, modos: buildDefaultModos(desde, hasta, 3) };
+}
+// lineaBHabilitada: si el lavadero abre la línea de trabajo B (contingencia)
+// ese día, cuando la línea A se llena. Es parte de la config de cada día
+// porque no todos los días necesitan la misma capacidad extra (ej. un sábado
+// con mucha demanda sí, un martes tranquilo no).
+const HORARIOS_CONFIG = {
+  0: { abierto:false, desde:'08:00', hasta:'13:00', modos:{}, lineaBHabilitada:false, lineaB:defaultLineaB('08:00','13:00') }, // domingo: cerrado
+  1: { abierto:true,  desde:'08:00', hasta:'17:00', modos:conCorte(buildDefaultModos('08:00','17:00'),'12:00','13:00'), lineaBHabilitada:false, lineaB:defaultLineaB('08:00','17:00') }, // lunes
+  2: { abierto:true,  desde:'08:00', hasta:'17:00', modos:conCorte(buildDefaultModos('08:00','17:00'),'12:00','13:00'), lineaBHabilitada:false, lineaB:defaultLineaB('08:00','17:00') }, // martes
+  3: { abierto:true,  desde:'08:00', hasta:'17:00', modos:conCorte(buildDefaultModos('08:00','17:00'),'12:00','13:00'), lineaBHabilitada:false, lineaB:defaultLineaB('08:00','17:00') }, // miércoles
+  4: { abierto:true,  desde:'08:00', hasta:'17:00', modos:conCorte(buildDefaultModos('08:00','17:00'),'12:00','13:00'), lineaBHabilitada:false, lineaB:defaultLineaB('08:00','17:00') }, // jueves
+  5: { abierto:true,  desde:'08:00', hasta:'17:00', modos:conCorte(buildDefaultModos('08:00','17:00'),'12:00','13:00'), lineaBHabilitada:false, lineaB:defaultLineaB('08:00','17:00') }, // viernes
+  6: { abierto:true,  desde:'08:00', hasta:'12:00', modos:buildDefaultModos('08:00','12:00'), lineaBHabilitada:false, lineaB:defaultLineaB('08:00','12:00') }, // sábado: media jornada
+};
+const TIME_OPTIONS = generateHalfHourSlots('06:00','22:30');
+
+// Turnos guardados por día (clave: fecha ISO local "YYYY-MM-DD"), para poder
+// navegar la agenda a fechas anteriores o posteriores, no solo "hoy".
+function isoDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+let TURNOS_POR_DIA = {
+  [isoDate(new Date())]: [
+    { hora:'08:00', linea:'A', vehiculo:'camion', patente:'AF 204 KL', cliente:'Transporte Cordillera SRL', servicio:'Lavado completo', estado:'completado', formaPago:'Cuenta corriente' },
+    { hora:'08:30', linea:'A', vehiculo:'camion', patente:'AC 991 TZ', cliente:'Log-Express SA', servicio:'Lavado exterior', estado:'completado', formaPago:'Cuenta corriente' },
+    { hora:'09:00', linea:'A', vehiculo:'auto', patente:'OT 442 GH', cliente:'Marcelo Ibáñez', servicio:'Lavado completo', estado:'completado', formaPago:'Efectivo' },
+    { hora:'09:30', linea:'A', vehiculo:'camion', patente:'AE 118 RF', cliente:'Distribuidora del Sur', servicio:'Lavado de chasis', estado:'curso', formaPago:'Cuenta corriente' },
+    { hora:'10:00', linea:'A', vehiculo:'camion', patente:'AB 733 PL', cliente:'Fletes Bianchi', servicio:'Lavado completo', estado:'reservado', formaPago:'Transferencia' },
+    { hora:'10:30', linea:'B', vehiculo:'camion', patente:'AD 560 MN', cliente:'Transporte Cordillera SRL', servicio:'Lavado exterior', estado:'reservado', formaPago:'Cuenta corriente' },
+    { hora:'11:00', linea:'A', vehiculo:'auto', patente:'PQ 205 XA', cliente:'Julieta Márquez', servicio:'Lavado exterior', estado:'cancelado', formaPago:'Efectivo' },
+  ],
+};
+function turnosDelDia(diaIso){
+  if(!TURNOS_POR_DIA[diaIso]) TURNOS_POR_DIA[diaIso] = [];
+  return TURNOS_POR_DIA[diaIso];
+}
+
+// Gastos guardados por día, misma idea que los turnos.
+let GASTOS_POR_DIA = {
+  [isoDate(new Date())]: [
+    { categoria:'Sueldos', monto:45000, desc:'Turno mañana (2 operarios)' },
+    { categoria:'Servicios', monto:8200, desc:'Agua + luz prorrateado del día' },
+    { categoria:'Insumos', monto:5400, desc:'Detergente y cera' },
+  ],
+};
+function gastosDelDia(diaIso){
+  if(!GASTOS_POR_DIA[diaIso]) GASTOS_POR_DIA[diaIso] = [];
+  return GASTOS_POR_DIA[diaIso];
+}
+
+// Datos históricos de ejemplo para los últimos 7 días (además de hoy), para
+// que el filtro de fecha de Reportes tenga algo real para agregar apenas se
+// abre la demo, sin depender de datos sueltos como el chart de antes.
+(function seedHistorial(){
+  const conteoPorDiaAtras = { 1:24, 2:31, 3:19, 4:28, 5:26, 6:22, 7:15 }; // ayer..hace 7 días
+  const horasCiclo = ['08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30'];
+  const formasPago = ['Cuenta corriente','Transferencia','Efectivo','Contado'];
+  const empresasNombres = EMPRESAS.map(e=>e.nombre);
+  const particulares = ['Marcelo Ibáñez','Julieta Márquez','Roberto Sánchez','Ana Torres','Diego Fernández'];
+
+  Object.keys(conteoPorDiaAtras).forEach(k => {
+    const diasAtras = Number(k);
+    const fecha = new Date(); fecha.setDate(fecha.getDate()-diasAtras);
+    const iso = isoDate(fecha);
+    const cantidad = conteoPorDiaAtras[k];
+    const turnos = [];
+    let nCamion = 0, nAuto = 0;
+    for(let n=0; n<cantidad; n++){
+      const esCamion = (n % 4) !== 0; // ~75% camión, acorde a la prioridad del negocio
+      const vehiculo = esCamion ? 'camion' : 'auto';
+      const serviciosVehiculo = SERVICIOS.filter(s=>s.vehiculos.includes(vehiculo));
+      const servicio = serviciosVehiculo[n % serviciosVehiculo.length];
+      const cancelado = n % 11 === 10; // alguna cancelación ocasional, realista
+      // Contadores propios por tipo de vehículo (no "n" directo), para que las
+      // 4 empresas roten parejo y no queden sesgadas por el patrón camión/auto.
+      const idxCliente = esCamion ? nCamion++ : nAuto++;
+      turnos.push({
+        hora: horasCiclo[n % horasCiclo.length],
+        linea: (n % 9 === 8) ? 'B' : 'A',
+        vehiculo,
+        patente: esCamion ? `A${String.fromCharCode(65+(n%6))} ${100+n*7}` : `O${String.fromCharCode(84+(n%3))} ${200+n*3}`,
+        cliente: esCamion ? empresasNombres[idxCliente % empresasNombres.length] : particulares[idxCliente % particulares.length],
+        servicio: servicio.nombre,
+        estado: cancelado ? 'cancelado' : 'completado',
+        formaPago: formasPago[n % formasPago.length],
+      });
+    }
+    TURNOS_POR_DIA[iso] = turnos;
+  });
+
+  const gastosHistoricos = {
+    1: [{categoria:'Sueldos', monto:45000, desc:'Turno mañana (2 operarios)'}, {categoria:'Insumos', monto:6200, desc:'Detergente y cera'}],
+    2: [{categoria:'Servicios', monto:9100, desc:'Agua + luz prorrateado'}],
+    3: [{categoria:'Sueldos', monto:45000, desc:'Turno mañana (2 operarios)'}],
+    4: [{categoria:'Insumos', monto:5800, desc:'Repuestos hidrolavadora'}],
+    5: [{categoria:'Sueldos', monto:45000, desc:'Turno mañana (2 operarios)'}, {categoria:'Impuestos', monto:18000, desc:'Ingresos brutos'}],
+    6: [{categoria:'Servicios', monto:8700, desc:'Agua + luz prorrateado'}],
+    7: [{categoria:'Sueldos', monto:45000, desc:'Turno mañana (2 operarios)'}],
+  };
+  Object.keys(gastosHistoricos).forEach(k => {
+    const fecha = new Date(); fecha.setDate(fecha.getDate()-Number(k));
+    GASTOS_POR_DIA[isoDate(fecha)] = gastosHistoricos[k];
+  });
+})();
+
+/* ---------------------------------------------------------------- */
+/* VISTA TOGGLE                                                      */
+/* ---------------------------------------------------------------- */
+function setView(v){
+  document.getElementById('view-cliente').classList.toggle('active', v==='cliente');
+  document.getElementById('view-admin').classList.toggle('active', v==='admin');
+  document.getElementById('tab-cliente').classList.toggle('active', v==='cliente');
+  document.getElementById('tab-admin').classList.toggle('active', v==='admin');
+  if(v==='admin' && !window.__adminBuilt){ buildAdmin(); window.__adminBuilt = true; }
+}
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(()=> t.classList.remove('show'), 2400);
+}
+
+/* ---------------------------------------------------------------- */
+/* WIZARD CLIENTE                                                    */
+/* ---------------------------------------------------------------- */
+const booking = {
+  vehiculo:null, servicio:null, dia:'hoy', hora:null, linea:null,
+  denominacion:'', telefono:'', cuit:'', email:'', direccion:'',
+  marca:'', modelo:'', patente:'', empresa:'', formaPago:''
+};
+let step = 1;
+
+function updateSteps(){
+  for(let i=1;i<=4;i++){
+    document.getElementById('seg'+i).classList.toggle('done', i<=step);
+  }
+}
+
+function renderStep(opts){
+  opts = opts || {};
+  updateSteps();
+  const el = document.getElementById('cliente-content');
+  // El carrusel de días se reconstruye entero en cada render (incluso al
+  // elegir un horario, que no toca el día). Guardamos su scroll actual acá,
+  // ANTES de pisar el HTML, para poder restaurarlo y que no "salte" de foco
+  // cuando lo único que cambió fue el horario.
+  const prevTrack = document.getElementById('day-tabs');
+  const prevScroll = prevTrack ? prevTrack.scrollLeft : null;
+
+  if(step===1) el.innerHTML = stepVehiculo();
+  else if(step===2) el.innerHTML = stepHorario();
+  else if(step===3) el.innerHTML = stepDatos();
+  else el.innerHTML = stepConfirmacion();
+  if(step===3) applyPrefill();
+
+  if(step===2){
+    requestAnimationFrame(()=>{
+      const track = document.getElementById('day-tabs');
+      if(track){
+        if(opts.centerDay || prevScroll===null) centerActiveDay();
+        else track.scrollLeft = prevScroll;
+      }
+      updateCarouselNav();
+    });
+  }
+}
+
+function scrollDays(dir){
+  const track = document.getElementById('day-tabs');
+  if(!track) return;
+  track.scrollBy({ left: dir * 200, behavior:'smooth' });
+}
+
+function centerActiveDay(){
+  const track = document.getElementById('day-tabs');
+  const active = track && track.querySelector('button.active');
+  if(!track || !active) return;
+  // offsetLeft depende del offsetParent (acá termina siendo el header sticky,
+  // no el propio carrusel), así que medimos con getBoundingClientRect para
+  // que el cálculo sea siempre relativo al track, sin importar el DOM alrededor.
+  const trackRect = track.getBoundingClientRect();
+  const activeRect = active.getBoundingClientRect();
+  const activeLeftInTrack = track.scrollLeft + (activeRect.left - trackRect.left);
+  track.scrollLeft = Math.max(0, activeLeftInTrack - (track.clientWidth/2) + (active.clientWidth/2));
+}
+
+function updateCarouselNav(){
+  const track = document.getElementById('day-tabs');
+  const prev = document.getElementById('day-prev');
+  const next = document.getElementById('day-next');
+  if(!track || !prev || !next) return;
+  prev.disabled = track.scrollLeft <= 4;
+  next.disabled = track.scrollLeft >= (track.scrollWidth - track.clientWidth - 4);
+}
+
+function stepVehiculo(){
+  const servicios = SERVICIOS.filter(s => !booking.vehiculo || s.vehiculos.includes(booking.vehiculo));
+  return `
+    <div class="step-label">Paso 1 de 4</div>
+    <h2 class="step-title">¿Qué vehículo traés hoy?</h2>
+    <div class="card-grid">
+      <div class="pick-card ${booking.vehiculo==='camion'?'selected':''}" onclick="pickVehiculo('camion')">
+        <span class="icon">🚛</span><div class="name">Camión</div><div class="hint">Empresa o particular</div>
+      </div>
+      <div class="pick-card ${booking.vehiculo==='auto'?'selected':''}" onclick="pickVehiculo('auto')">
+        <span class="icon">🚗</span><div class="name">Auto</div><div class="hint">Particular</div>
+      </div>
+    </div>
+    ${booking.vehiculo ? `
+      <div class="step-label">Tipo de servicio</div>
+      <div class="service-list">
+        ${servicios.map(s => `
+          <div class="service-row ${booking.servicio===s.id?'selected':''}" onclick="pickServicio('${s.id}')">
+            <div><div class="name">${s.nombre}</div><div class="desc">${s.desc}</div></div>
+            <div class="price mono">$${s.precio.toLocaleString('es-AR')}</div>
+          </div>`).join('')}
+      </div>` : ''}
+    <div class="btn-row" style="margin-top:${booking.vehiculo?0:8}px">
+      <button class="btn btn-primary" ${booking.servicio?'':'disabled'} onclick="goStep(2)">Elegir horario</button>
+    </div>
+  `;
+}
+function pickVehiculo(v){ booking.vehiculo=v; booking.servicio=null; renderStep(); }
+function pickServicio(id){ booking.servicio=id; renderStep(); }
+
+// Próximos 21 días reales a partir de hoy, para que se pueda reservar cualquier
+// día (no solo hoy/mañana/pasado). El horario disponible varía según el día
+// de la semana: el admin configura esto, acá se simula lunes a sábado con
+// sábado en media jornada y domingo cerrado.
+const DOW_SHORT = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+const DOW_LONG = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const DOW_PLURAL = ['domingos','lunes','martes','miércoles','jueves','viernes','sábados'];
+const MONTHS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+function formatDayLabel(day){
+  if(day.isToday) return 'Hoy';
+  const dowCap = DOW_LONG[day.date.getDay()].replace(/^./, c => c.toUpperCase());
+  return `${dowCap} ${day.num} de ${MONTHS[day.date.getMonth()]}`;
+}
+function buildDays(count){
+  const out = [];
+  const base = new Date();
+  for(let i=0;i<count;i++){
+    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate()+i);
+    out.push({ id: i===0 ? 'hoy' : 'd'+i, date:d, dow:DOW_SHORT[d.getDay()], num:d.getDate(), isToday:i===0 });
+  }
+  return out;
+}
+const DAYS = buildDays(21);
+function dayById(id){ return DAYS.find(d => d.id===id) || DAYS[0]; }
+
+// 'cerrado' bloquea el horario para cualquier vehículo (ej. un corte de
+// mediodía); 'camion'/'auto' solo bloquean al tipo de vehículo contrario;
+// 'libre' no bloquea a nadie.
+function modoBloqueaVehiculo(modo, vehiculo){
+  if(!modo || modo==='libre') return false;
+  if(modo==='cerrado') return true;
+  return vehiculo && modo!==vehiculo;
+}
+
+function slotsFor(diaId){
+  const day = dayById(diaId);
+  const cfg = HORARIOS_CONFIG[day.date.getDay()];
+  if(!cfg.abierto) return [];
+
+  // Cada línea tiene su propia franja y sus propios cupos por vehículo, así
+  // que un horario puede existir en A, en B, o en ambas — el cliente ve el
+  // resultado combinado sin saber de qué línea sale (transparente).
+  const horasA = generateHalfHourSlots(cfg.desde, cfg.hasta);
+  const horasB = (cfg.lineaBHabilitada && cfg.lineaB) ? generateHalfHourSlots(cfg.lineaB.desde, cfg.lineaB.hasta) : [];
+  const todasLasHoras = Array.from(new Set([...horasA, ...horasB])).sort();
+
+  const ocupadoHoy = day.id==='hoy' ? ['08:00','08:30','09:30'] : []; // demo: turnos ya tomados en línea A, solo para "hoy"
+
+  return todasLasHoras.map(h => {
+    const enA = horasA.includes(h);
+    const modoA = enA ? (cfg.modos[h] || 'libre') : null;
+    const disponibleA = enA && !ocupadoHoy.includes(h) && !modoBloqueaVehiculo(modoA, booking.vehiculo);
+
+    const enB = horasB.includes(h);
+    const modoB = enB ? (cfg.lineaB.modos[h] || 'libre') : null;
+    const disponibleB = enB && !modoBloqueaVehiculo(modoB, booking.vehiculo);
+
+    return { hora:h, linea: disponibleA ? 'A' : 'B', disponible: disponibleA || disponibleB };
+  });
+}
+
+function renderSlotArea(){
+  const day = dayById(booking.dia);
+  const cfg = HORARIOS_CONFIG[day.date.getDay()];
+  const slots = slotsFor(booking.dia);
+  if(!cfg.abierto){
+    return `
+      <div class="closed-day">
+        <span class="icon">🚫</span>
+        <div><strong>El lavadero no abre los ${DOW_PLURAL[day.date.getDay()]}.</strong></div>
+        <div style="font-size:13px">Elegí otro día en la franja de arriba.</div>
+      </div>
+    `;
+  }
+  return `
+    <div class="slot-grid">
+      ${slots.map(s => `
+        <div class="slot ${booking.hora===s.hora?'selected':''} ${s.disponible?'':'disabled'}"
+             onclick="${s.disponible?`pickHora('${s.hora}','${s.linea}')`:''}">
+          ${s.hora}
+          <span class="tag">${s.disponible ? 'Disponible' : 'Sin cupo'}</span>
+        </div>`).join('')}
+    </div>
+    <div class="legend-row">
+      <span><span class="legend-dot" style="background:var(--accent)"></span>Franja preferente para tu vehículo</span>
+      <span><span class="legend-dot" style="background:var(--ink-faint)"></span>Reservado para otro tipo de vehículo</span>
+    </div>
+    ${slots.length ? `<div class="legend-row" style="margin-top:-8px"><span>🕐 Horario este día: ${slots[0].hora} a ${minutesToTime(timeToMinutes(slots[slots.length-1].hora)+30)}</span></div>` : ''}
+  `;
+}
+
+function stepHorario(){
+  return `
+    <div class="step-label">Paso 2 de 4</div>
+    <h2 class="step-title">Elegí el horario</h2>
+    <div class="day-carousel">
+      <button class="car-nav" id="day-prev" onclick="scrollDays(-1)" aria-label="Días anteriores">‹</button>
+      <div class="day-tabs" id="day-tabs" onscroll="updateCarouselNav()">
+        ${DAYS.map(d => `
+          <button class="${booking.dia===d.id?'active':''} ${d.isToday?'today':''}" onclick="pickDia('${d.id}')">
+            <span class="dow">${d.isToday?'Hoy':d.dow}</span><span class="num">${d.num}</span>
+          </button>`).join('')}
+      </div>
+      <button class="car-nav" id="day-next" onclick="scrollDays(1)" aria-label="Días siguientes">›</button>
+    </div>
+    <div id="slot-area">${renderSlotArea()}</div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goStep(1)">Atrás</button>
+      <button class="btn btn-primary" id="btn-continuar-horario" ${booking.hora?'':'disabled'} onclick="goStep(3)">Continuar</button>
+    </div>
+  `;
+}
+function pickDia(d){ booking.dia=d; booking.hora=null; renderStep({centerDay:true}); }
+function pickHora(h,l){
+  // Actualiza solo la grilla de horarios (y el botón Continuar) por DOM directo,
+  // sin pasar por renderStep(): así el carrusel de días ni se toca, y no hay
+  // reflow/flicker en él por elegir un horario que no cambia el día.
+  booking.hora=h; booking.linea=l;
+  const slotArea = document.getElementById('slot-area');
+  if(slotArea) slotArea.innerHTML = renderSlotArea(); else renderStep();
+  const btn = document.getElementById('btn-continuar-horario');
+  if(btn) btn.disabled = !booking.hora;
+}
+
+function applyPrefill(){
+  try{
+    const saved = JSON.parse(localStorage.getItem('bellaitalia_demo_cliente') || 'null');
+    if(saved){
+      ['denominacion','telefono','cuit','email','direccion','marca','modelo','patente','empresa','formaPago'].forEach(k => {
+        const el = document.getElementById('f-'+k.toLowerCase());
+        if(el) el.value = saved[k] || '';
+      });
+      const banner = document.getElementById('prefill-banner');
+      if(banner) banner.style.display = 'flex';
+    }
+  }catch(e){}
+}
+
+function stepDatos(){
+  const servicio = SERVICIOS.find(s=>s.id===booking.servicio);
+  return `
+    <div class="step-label">Paso 3 de 4</div>
+    <h2 class="step-title">Tus datos</h2>
+    <div class="prefill-banner" id="prefill-banner" style="display:none">
+      <span>🔖</span>
+      <div><strong>Te reconocimos en este dispositivo</strong>Completamos tus datos de la última vez. Revisalos y confirmá.</div>
+    </div>
+
+    <div class="subhead">Datos del cliente</div>
+    <div class="field"><label>Denominación (nombre o razón social)</label><input id="f-denominacion" placeholder="Ej: Marcelo Ibáñez / Transporte Cordillera SRL"></div>
+    <div class="field"><label>CUIT / CUIL</label><input id="f-cuit" placeholder="Ej: 20-34567891-3"></div>
+    <div class="field"><label>Teléfono (WhatsApp)</label><input id="f-telefono" placeholder="Ej: 11 5555-1234"></div>
+    <div class="field"><label>Correo electrónico</label><input id="f-email" type="email" placeholder="Ej: contacto@empresa.com"></div>
+    <div class="field"><label>Dirección</label><input id="f-direccion" placeholder="Ej: Ruta 9 km 45, San Justo"></div>
+
+    <div class="subhead">Datos del vehículo</div>
+    <div class="field"><label>Marca</label><input id="f-marca" placeholder="${booking.vehiculo==='camion'?'Ej: Scania':'Ej: Volkswagen'}"></div>
+    <div class="field"><label>Modelo</label><input id="f-modelo" placeholder="${booking.vehiculo==='camion'?'Ej: R450':'Ej: Amarok'}"></div>
+    <div class="field"><label>Patente</label><input id="f-patente" placeholder="Ej: AB 733 PL"></div>
+    ${booking.vehiculo==='camion' ? `<div class="field"><label>Empresa asociada (opcional)</label>
+      <select id="f-empresa"><option value="">Particular / no aplica</option>
+      ${EMPRESAS.map(e=>`<option value="${e.nombre}">${e.nombre}</option>`).join('')}</select></div>` : ''}
+
+    <div class="subhead">Forma de pago</div>
+    <div class="field"><label>¿Cómo vas a abonar?</label>
+      <select id="f-formapago">
+        <option value="">Seleccioná una opción</option>
+        <option value="Contado">Contado</option>
+        <option value="Transferencia">Transferencia</option>
+        <option value="Efectivo">Efectivo</option>
+        <option value="Cuenta corriente">Cuenta corriente</option>
+      </select>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goStep(2)">Atrás</button>
+      <button class="btn btn-primary" onclick="submitBooking()">Confirmar turno</button>
+    </div>
+  `;
+}
+
+function submitBooking(){
+  booking.denominacion = document.getElementById('f-denominacion').value.trim();
+  booking.cuit = document.getElementById('f-cuit').value.trim();
+  booking.telefono = document.getElementById('f-telefono').value.trim();
+  booking.email = document.getElementById('f-email').value.trim();
+  booking.direccion = document.getElementById('f-direccion').value.trim();
+  booking.marca = document.getElementById('f-marca').value.trim();
+  booking.modelo = document.getElementById('f-modelo').value.trim();
+  booking.patente = document.getElementById('f-patente').value.trim();
+  booking.formaPago = document.getElementById('f-formapago').value;
+  const empresaEl = document.getElementById('f-empresa');
+  booking.empresa = empresaEl ? empresaEl.value : '';
+  if(!booking.denominacion || !booking.telefono || !booking.patente || !booking.formaPago){
+    toast('Completá denominación, teléfono, patente y forma de pago para continuar');
+    return;
+  }
+  try{
+    localStorage.setItem('bellaitalia_demo_cliente', JSON.stringify({
+      denominacion:booking.denominacion, telefono:booking.telefono, cuit:booking.cuit, email:booking.email,
+      direccion:booking.direccion, marca:booking.marca, modelo:booking.modelo, patente:booking.patente,
+      empresa:booking.empresa, formaPago:booking.formaPago
+    }));
+  }catch(e){}
+  step = 4;
+  renderStep();
+}
+
+function stepConfirmacion(){
+  const servicio = SERVICIOS.find(s=>s.id===booking.servicio);
+  return `
+    <div class="confirm-hero">
+      <div class="badge">✓</div>
+      <h2>Turno confirmado</h2>
+      <p>Guardamos tus datos en este dispositivo para tu próxima visita.</p>
+    </div>
+    <div class="summary-card">
+      <div class="row"><span class="k">Cliente</span><span class="v">${booking.denominacion}</span></div>
+      ${booking.cuit ? `<div class="row"><span class="k">CUIT/CUIL</span><span class="v mono">${booking.cuit}</span></div>` : ''}
+      <div class="row"><span class="k">Teléfono</span><span class="v">${booking.telefono}</span></div>
+      ${booking.empresa ? `<div class="row"><span class="k">Empresa</span><span class="v">${booking.empresa}</span></div>` : ''}
+      <div class="row"><span class="k">Vehículo</span><span class="v">${booking.vehiculo==='camion'?'Camión':'Auto'}${booking.marca?' · '+booking.marca:''}${booking.modelo?' '+booking.modelo:''} · ${booking.patente||'—'}</span></div>
+      <div class="row"><span class="k">Servicio</span><span class="v">${servicio.nombre}</span></div>
+      <div class="row"><span class="k">Día y hora</span><span class="v">${formatDayLabel(dayById(booking.dia))} · ${booking.hora}</span></div>
+      <div class="row"><span class="k">Forma de pago</span><span class="v">${booking.formaPago}</span></div>
+      <div class="row"><span class="k">Total</span><span class="v mono">$${servicio.precio.toLocaleString('es-AR')}</span></div>
+    </div>
+    <div class="btn-row" style="flex-direction:column">
+      <button class="btn btn-primary" onclick="toast('Simulado: la confirmación se envió por WhatsApp')">Enviar comprobante por WhatsApp</button>
+      <button class="btn btn-ghost" onclick="resetBooking()">Reservar otro turno</button>
+    </div>
+  `;
+}
+
+function goStep(n){ step=n; renderStep(); }
+function resetBooking(){
+  booking.vehiculo=null; booking.servicio=null; booking.dia='hoy'; booking.hora=null; booking.linea=null;
+  step=1; renderStep();
+}
+renderStep();
+
+/* ---------------------------------------------------------------- */
+/* ADMIN                                                             */
+/* ---------------------------------------------------------------- */
+const SECTIONS = [
+  { id:'agenda', label:'Agenda de hoy', ic:'📋' },
+  { id:'clientes', label:'Clientes', ic:'👤' },
+  { id:'servicios', label:'Servicios y precios', ic:'💵' },
+  { id:'horarios', label:'Horarios y cupos', ic:'🕘' },
+  { id:'empresas', label:'Empresas', ic:'🏢' },
+  { id:'gastos', label:'Gastos', ic:'🧾' },
+  { id:'reportes', label:'Reportes', ic:'📊' },
+];
+let currentSection = 'agenda';
+
+function buildAdmin(){
+  document.getElementById('sidebar').innerHTML = SECTIONS.map(s =>
+    `<button class="${s.id===currentSection?'active':''}" data-s="${s.id}" onclick="setSection('${s.id}')"><span class="ic">${s.ic}</span>${s.label}</button>`
+  ).join('');
+  document.getElementById('mobile-tabs').innerHTML = SECTIONS.map(s =>
+    `<button class="${s.id===currentSection?'active':''}" data-s="${s.id}" onclick="setSection('${s.id}')">${s.ic} ${s.label}</button>`
+  ).join('');
+  renderSection();
+}
+
+function setSection(id){
+  currentSection = id;
+  document.querySelectorAll('.sidebar button, .mobile-tabs button').forEach(b => b.classList.toggle('active', b.dataset.s===id));
+  renderSection();
+}
+
+function renderSection(){
+  const main = document.getElementById('admin-main');
+  if(currentSection==='agenda') main.innerHTML = sectionAgenda();
+  else if(currentSection==='clientes') main.innerHTML = sectionClientes();
+  else if(currentSection==='servicios') main.innerHTML = sectionServicios();
+  else if(currentSection==='horarios') main.innerHTML = sectionHorarios();
+  else if(currentSection==='empresas') main.innerHTML = sectionEmpresas();
+  else if(currentSection==='gastos') main.innerHTML = sectionGastos();
+  else main.innerHTML = sectionReportes();
+  if(currentSection==='reportes') drawChart();
+}
+
+function sectionClientes(){
+  return `
+    <div class="admin-head"><div><h1>Clientes</h1><p>Registro de clientes particulares y de empresa</p></div>
+      <button class="btn-sm accent" onclick="openClienteModal()">+ Nuevo cliente</button></div>
+    <div class="panel-card">
+      <div class="head"><div><h3>Clientes registrados</h3><div class="sub">${CLIENTES.length} clientes</div></div></div>
+      <div class="body table-wrap">
+        <table class="data">
+          <thead><tr><th>Denominación</th><th>Contacto</th><th>CUIT/CUIL</th><th>Vehículo</th></tr></thead>
+          <tbody>
+            ${CLIENTES.map(c => `
+              <tr>
+                <td>${c.denominacion}<div style="font-size:11.5px;color:var(--ink-faint)">${c.direccion||'—'}</div></td>
+                <td>${c.telefono}<div style="font-size:11.5px;color:var(--ink-faint)">${c.email||'—'}</div></td>
+                <td class="mono">${c.cuit||'—'}</td>
+                <td><span class="chip ${c.vehiculo}">${c.vehiculo==='camion'?'🚛':'🚗'} ${c.marca||''} ${c.modelo||''}</span><div style="font-size:11.5px;color:var(--ink-faint);margin-top:3px">${c.patente||'—'}</div></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function openClienteModal(){
+  document.getElementById('modal-body').innerHTML = `
+    <button class="close" onclick="closeModal()">×</button>
+    <h3>Nuevo cliente</h3>
+    <div style="font-size:12.5px;color:var(--ink-faint);margin-bottom:14px">Alta manual, ej. mostrador o teléfono</div>
+    <div class="field"><label>Denominación (nombre o razón social)</label><input id="c-denominacion" placeholder="Ej: Marcelo Ibáñez"></div>
+    <div class="field"><label>Teléfono</label><input id="c-telefono" placeholder="Ej: 11 5555-1234"></div>
+    <div class="field"><label>CUIT / CUIL</label><input id="c-cuit" placeholder="Ej: 20-34567891-3"></div>
+    <div class="field"><label>Correo electrónico</label><input id="c-email" type="email" placeholder="Ej: contacto@empresa.com"></div>
+    <div class="field"><label>Dirección</label><input id="c-direccion" placeholder="Ej: Ruta 9 km 45, San Justo"></div>
+    <div class="field"><label>Tipo de vehículo</label>
+      <select id="c-vehiculo"><option value="camion">Camión</option><option value="auto">Auto</option></select>
+    </div>
+    <div class="field"><label>Marca</label><input id="c-marca" placeholder="Ej: Scania"></div>
+    <div class="field"><label>Modelo</label><input id="c-modelo" placeholder="Ej: R450"></div>
+    <div class="field"><label>Patente</label><input id="c-patente" placeholder="Ej: AB 733 PL"></div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn btn-ghost" style="width:auto;flex:1" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveCliente()">Guardar cliente</button>
+    </div>
+  `;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function saveCliente(){
+  const denominacion = document.getElementById('c-denominacion').value.trim();
+  const telefono = document.getElementById('c-telefono').value.trim();
+  const patente = document.getElementById('c-patente').value.trim();
+  if(!denominacion || !telefono){ toast('Completá al menos denominación y teléfono'); return; }
+  CLIENTES.push({
+    denominacion, telefono,
+    cuit: document.getElementById('c-cuit').value.trim(),
+    email: document.getElementById('c-email').value.trim(),
+    direccion: document.getElementById('c-direccion').value.trim(),
+    vehiculo: document.getElementById('c-vehiculo').value,
+    marca: document.getElementById('c-marca').value.trim(),
+    modelo: document.getElementById('c-modelo').value.trim(),
+    patente,
+  });
+  closeModal();
+  toast('Cliente agregado');
+  if(currentSection==='clientes') renderSection();
+}
+
+// Día que se está viendo en la Agenda (0 = hoy, -1 = ayer, 2 = pasado mañana...).
+let agendaOffset = 0;
+function agendaDate(){ const d = new Date(); d.setDate(d.getDate()+agendaOffset); return d; }
+function agendaDiaIso(){ return isoDate(agendaDate()); }
+function cambiarAgendaDia(delta){
+  agendaOffset += delta;
+  if(currentSection==='agenda') renderSection();
+}
+function irAgendaHoy(){
+  agendaOffset = 0;
+  if(currentSection==='agenda') renderSection();
+}
+function formatFechaAgenda(d){
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const cmp = new Date(d); cmp.setHours(0,0,0,0);
+  const diffDias = Math.round((cmp - hoy) / 86400000);
+  const dowCap = DOW_LONG[d.getDay()].replace(/^./, c => c.toUpperCase());
+  const base = `${dowCap} ${d.getDate()} de ${MONTHS[d.getMonth()]}`;
+  if(diffDias===0) return `Hoy · ${base}`;
+  if(diffDias===-1) return `Ayer · ${base}`;
+  if(diffDias===1) return `Mañana · ${base}`;
+  return base;
+}
+
+function statTiles(turnos, lineaBEsteDia){
+  const completados = turnos.filter(t=>t.estado==='completado').length;
+  const camiones = turnos.filter(t=>t.vehiculo==='camion' && t.estado!=='cancelado').length;
+  const autos = turnos.filter(t=>t.vehiculo==='auto' && t.estado!=='cancelado').length;
+  const ingresos = turnos.filter(t=>t.estado==='completado').reduce((a,t)=>{
+    const s = SERVICIOS.find(s=>s.nombre===t.servicio && s.vehiculos.includes(t.vehiculo)); return a + (s? s.precio : 0);
+  },0);
+  return `
+    <div class="stat-row">
+      <div class="stat-tile"><div class="label">LAVADOS</div><div class="value">${turnos.filter(t=>t.estado!=='cancelado').length}</div><div class="delta">${completados} completados</div></div>
+      <div class="stat-tile"><div class="label">CAMIONES / AUTOS</div><div class="value">${camiones} / ${autos}</div><div class="delta">Prioridad camión activa</div></div>
+      <div class="stat-tile"><div class="label">INGRESOS</div><div class="value">$${ingresos.toLocaleString('es-AR')}</div><div class="delta">De lavados completados</div></div>
+      <div class="stat-tile"><div class="label">LÍNEA B</div><div class="value">${turnos.filter(t=>t.linea==='B').length}</div><div class="delta ${lineaBEsteDia?'warn':''}">${lineaBEsteDia?'Habilitada este día':'Deshabilitada este día'}</div></div>
+    </div>
+  `;
+}
+
+function sectionAgenda(){
+  const turnos = turnosDelDia(agendaDiaIso());
+  const cfg = HORARIOS_CONFIG[agendaDate().getDay()];
+  return `
+    <div class="admin-head">
+      <div>
+        <h1>Agenda</h1>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap">
+          <button class="car-nav" onclick="cambiarAgendaDia(-1)" aria-label="Día anterior">‹</button>
+          <p style="margin:0;font-weight:600">${formatFechaAgenda(agendaDate())} · Línea A${cfg.lineaBHabilitada?' y Línea B':''}</p>
+          <button class="car-nav" onclick="cambiarAgendaDia(1)" aria-label="Día siguiente">›</button>
+          ${agendaOffset!==0 ? `<button class="btn-sm" onclick="irAgendaHoy()">Volver a hoy</button>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn-sm accent" onclick="openTurnoModal()">+ Nuevo turno</button>
+        <button class="btn-sm" onclick="abrirControlDiario()">Cerrar control diario</button>
+      </div>
+    </div>
+    ${statTiles(turnos, cfg.lineaBHabilitada)}
+    <div class="panel-card">
+      <div class="head"><div><h3>Turnos</h3><div class="sub">${turnos.length} turnos registrados</div></div></div>
+      ${turnos.length===0 ? `
+        <div style="padding:32px 18px;text-align:center;color:var(--ink-faint)">
+          No hay turnos cargados para este día.<br>Podés agregar uno con "+ Nuevo turno".
+        </div>
+      ` : `
+      <div class="body table-wrap">
+        <table class="data">
+          <thead><tr><th>Hora</th><th>Línea</th><th>Vehículo</th><th>Cliente</th><th>Servicio</th><th>Estado</th><th></th></tr></thead>
+          <tbody>
+            ${turnos.map((t,i) => `
+              <tr>
+                <td class="mono">${t.hora}</td>
+                <td><span class="linea-badge">${t.linea}</span></td>
+                <td><span class="chip ${t.vehiculo}">${t.vehiculo==='camion'?'🚛 Camión':'🚗 Auto'}</span></td>
+                <td>${t.cliente}<div style="font-size:11.5px;color:var(--ink-faint)">${t.patente}</div></td>
+                <td>${t.servicio}</td>
+                <td><span class="pill ${t.estado}">${estadoLabel(t.estado)}</span></td>
+                <td>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <button class="btn-sm" onclick="openOrden(${i})">Orden</button>
+                    <button class="btn-sm" onclick="openTurnoModal(${i})">Editar</button>
+                    ${t.estado!=='cancelado' ? `<button class="btn-sm" onclick="cancelarTurno(${i})">Cancelar</button>` : ''}
+                  </div>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      `}
+    </div>
+  `;
+}
+function estadoLabel(e){ return {reservado:'Reservado', curso:'En curso', completado:'Completado', cancelado:'Cancelado'}[e]; }
+
+const HORAS_AGENDA = ['08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30'];
+
+function openTurnoModal(i){
+  const editing = typeof i === 'number';
+  const t = editing ? turnosDelDia(agendaDiaIso())[i] : { hora:'08:00', linea:'A', vehiculo:'camion', patente:'', cliente:'', servicio:'', estado:'curso', formaPago:'Contado' };
+  document.getElementById('modal-body').innerHTML = `
+    <button class="close" onclick="closeModal()">×</button>
+    <h3>${editing ? 'Editar turno' : 'Nuevo turno presencial'}</h3>
+    <div style="font-size:12.5px;color:var(--ink-faint);margin-bottom:14px">${editing ? 'Modificá los datos y guardá.' : 'Para un cliente que llega sin turno reservado.'}</div>
+
+    <div class="field"><label>Cliente registrado (opcional)</label>
+      <select id="t-clienteref" onchange="prefillClienteEnTurno()">
+        <option value="">— Particular / nuevo —</option>
+        ${CLIENTES.map((c,ci)=>`<option value="${ci}">${c.denominacion}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field"><label>Denominación</label><input id="t-cliente" value="${t.cliente}" placeholder="Ej: Marcelo Ibáñez"></div>
+    <div class="field"><label>Patente</label><input id="t-patente" value="${t.patente}" placeholder="Ej: AB 733 PL"></div>
+    <div class="field"><label>Vehículo</label>
+      <select id="t-vehiculo" onchange="refreshTurnoServicios()">
+        <option value="camion" ${t.vehiculo==='camion'?'selected':''}>Camión</option>
+        <option value="auto" ${t.vehiculo==='auto'?'selected':''}>Auto</option>
+      </select>
+    </div>
+    <div class="field"><label>Servicio</label><select id="t-servicio"></select></div>
+    <div class="field"><label>Hora</label>
+      <select id="t-hora">${HORAS_AGENDA.map(h=>`<option value="${h}" ${t.hora===h?'selected':''}>${h}</option>`).join('')}</select>
+    </div>
+    <div class="field"><label>Línea</label>
+      <select id="t-linea">
+        <option value="A" ${t.linea==='A'?'selected':''}>Línea A</option>
+        <option value="B" ${t.linea==='B'?'selected':''}>Línea B (contingencia)</option>
+      </select>
+    </div>
+    <div class="field"><label>Forma de pago</label>
+      <select id="t-formapago">
+        ${['Contado','Transferencia','Efectivo','Cuenta corriente'].map(f=>`<option value="${f}" ${t.formaPago===f?'selected':''}>${f}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field"><label>Estado</label>
+      <select id="t-estado">
+        ${['reservado','curso','completado','cancelado'].map(e=>`<option value="${e}" ${t.estado===e?'selected':''}>${estadoLabel(e)}</option>`).join('')}
+      </select>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn btn-ghost" style="width:auto;flex:1" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveTurno(${editing ? i : 'null'})">Guardar turno</button>
+    </div>
+  `;
+  refreshTurnoServicios(t.servicio);
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function refreshTurnoServicios(preselectNombre){
+  const vehiculo = document.getElementById('t-vehiculo').value;
+  const sel = document.getElementById('t-servicio');
+  const opciones = SERVICIOS.filter(s => s.vehiculos.includes(vehiculo));
+  sel.innerHTML = opciones.map(s => `<option value="${s.nombre}" ${s.nombre===preselectNombre?'selected':''}>${s.nombre} · $${s.precio.toLocaleString('es-AR')}</option>`).join('');
+}
+
+function prefillClienteEnTurno(){
+  const idx = document.getElementById('t-clienteref').value;
+  if(idx==='') return;
+  const c = CLIENTES[idx];
+  document.getElementById('t-cliente').value = c.denominacion;
+  document.getElementById('t-patente').value = c.patente || '';
+  document.getElementById('t-vehiculo').value = c.vehiculo;
+  refreshTurnoServicios();
+}
+
+function saveTurno(i){
+  const editing = typeof i === 'number';
+  const cliente = document.getElementById('t-cliente').value.trim();
+  const patente = document.getElementById('t-patente').value.trim();
+  const servicio = document.getElementById('t-servicio').value;
+  if(!cliente || !patente || !servicio){ toast('Completá denominación, patente y servicio'); return; }
+  const turno = {
+    hora: document.getElementById('t-hora').value,
+    linea: document.getElementById('t-linea').value,
+    vehiculo: document.getElementById('t-vehiculo').value,
+    patente, cliente, servicio,
+    formaPago: document.getElementById('t-formapago').value,
+    estado: document.getElementById('t-estado').value,
+  };
+  if(editing) turnosDelDia(agendaDiaIso())[i] = turno; else turnosDelDia(agendaDiaIso()).push(turno);
+  closeModal();
+  toast(editing ? 'Turno actualizado' : 'Turno cargado');
+  if(currentSection==='agenda') renderSection();
+}
+
+function cancelarTurno(i){
+  if(!confirm('¿Cancelar este turno?')) return;
+  turnosDelDia(agendaDiaIso())[i].estado = 'cancelado';
+  toast('Turno cancelado');
+  if(currentSection==='agenda') renderSection();
+}
+
+
+function openOrden(i){
+  const t = turnosDelDia(agendaDiaIso())[i];
+  const s = SERVICIOS.find(s=>s.nombre===t.servicio && s.vehiculos.includes(t.vehiculo));
+  document.getElementById('modal-body').innerHTML = `
+    <button class="close" onclick="closeModal()">×</button>
+    <h3>Orden de trabajo</h3>
+    <div style="font-size:12.5px;color:var(--ink-faint);margin-bottom:14px">N° 000${1000+i} · Original y duplicado</div>
+    <div class="ot-row"><span class="k">Cliente</span><span>${t.cliente}</span></div>
+    <div class="ot-row"><span class="k">Vehículo</span><span>${t.vehiculo==='camion'?'Camión':'Auto'} · ${t.patente}</span></div>
+    <div class="ot-row"><span class="k">Servicio</span><span>${t.servicio}</span></div>
+    <div class="ot-row"><span class="k">Hora de ingreso</span><span>${t.hora} · Línea ${t.linea}</span></div>
+    <div class="ot-row"><span class="k">Importe</span><span class="mono">$${s?s.precio.toLocaleString('es-AR'):'—'}</span></div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn btn-primary" style="flex:1" onclick="toast('Simulado: orden enviada por WhatsApp')">Enviar por WhatsApp</button>
+    </div>
+  `;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+function closeModal(){
+  document.getElementById('modal-backdrop').classList.remove('open');
+  document.getElementById('modal-body').className = 'modal';
+}
+
+function abrirControlDiario(){
+  const turnos = turnosDelDia(agendaDiaIso());
+  const completados = turnos.filter(t=>t.estado==='completado');
+  const cancelados = turnos.filter(t=>t.estado==='cancelado');
+  const ingresos = completados.reduce((a,t)=>{
+    const s = SERVICIOS.find(s=>s.nombre===t.servicio && s.vehiculos.includes(t.vehiculo));
+    return a + (s ? s.precio : 0);
+  },0);
+  document.getElementById('modal-body').innerHTML = `
+    <button class="close" onclick="closeModal()">×</button>
+    <div class="doc-letterhead">
+      <div><div class="brand">🚛 Bella Italia</div><div class="doc-kind">Control diario</div></div>
+      <div class="meta">${formatFechaAgenda(agendaDate())}<br>Generado ${new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})} hs</div>
+    </div>
+    <div class="doc-summary">
+      <div class="cell"><div class="l">Turnos</div><div class="v">${turnos.length}</div></div>
+      <div class="cell"><div class="l">Completados</div><div class="v">${completados.length}</div></div>
+      <div class="cell"><div class="l">Cancelados</div><div class="v">${cancelados.length}</div></div>
+      <div class="cell"><div class="l">Ingresos</div><div class="v">$${ingresos.toLocaleString('es-AR')}</div></div>
+    </div>
+    <div class="doc-section-title">Detalle de lavados</div>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Hora</th><th>Línea</th><th>Vehículo</th><th>Cliente</th><th>Servicio</th><th>Estado</th></tr></thead>
+        <tbody>
+          ${turnos.length ? turnos.map(t => `
+            <tr>
+              <td class="mono">${t.hora}</td>
+              <td><span class="linea-badge">${t.linea}</span></td>
+              <td>${t.vehiculo==='camion'?'🚛 Camión':'🚗 Auto'}</td>
+              <td>${t.cliente}<div style="font-size:11px;color:var(--ink-faint)">${t.patente}</div></td>
+              <td>${t.servicio}</td>
+              <td><span class="pill ${t.estado}">${estadoLabel(t.estado)}</span></td>
+            </tr>`).join('') : `<tr><td colspan="6" style="color:var(--ink-faint)">Sin turnos este día</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+    <div class="doc-note">Reemplaza la planilla de control diario en papel: se arma automáticamente a partir de los turnos cargados en la Agenda de este día.</div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn btn-primary" style="flex:1" onclick="toast('Simulado: control diario enviado por email')">Enviar por email</button>
+    </div>
+  `;
+  document.getElementById('modal-body').className = 'modal doc';
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function abrirReportePDF(){
+  const r = computeReporte(reportesDesde, reportesHasta);
+  const ticketProm = r.completadosCount ? Math.round(r.ingresos / r.completadosCount) : 0;
+  const totalVeh = r.camiones + r.autos;
+  const pctCamion = totalVeh ? Math.round((r.camiones/totalVeh)*100) : 0;
+  const pctAuto = totalVeh ? 100 - pctCamion : 0;
+  const tasaCancelacion = r.totalCount ? Math.round((r.canceladosCount/r.totalCount)*100) : 0;
+
+  document.getElementById('modal-body').innerHTML = `
+    <button class="close" onclick="closeModal()">×</button>
+    <div class="doc-letterhead">
+      <div><div class="brand">🚛 Bella Italia</div><div class="doc-kind">Reporte de contabilidad</div></div>
+      <div class="meta">${formatRangoReportes()}<br>Generado ${new Date().toLocaleDateString('es-AR')}</div>
+    </div>
+
+    <div class="doc-summary">
+      <div class="cell"><div class="l">Ganancia neta</div><div class="v">$${(r.ingresos-r.gastosTotal).toLocaleString('es-AR')}</div></div>
+      <div class="cell"><div class="l">Ingresos</div><div class="v">$${r.ingresos.toLocaleString('es-AR')}</div></div>
+      <div class="cell"><div class="l">Gastos</div><div class="v">$${r.gastosTotal.toLocaleString('es-AR')}</div></div>
+      <div class="cell"><div class="l">Ticket prom.</div><div class="v">$${ticketProm.toLocaleString('es-AR')}</div></div>
+    </div>
+
+    <div class="doc-section-title">Vehículos</div>
+    <div class="ot-row"><span class="k">Camiones</span><span>${r.camiones} (${pctCamion}%)</span></div>
+    <div class="ot-row"><span class="k">Autos</span><span>${r.autos} (${pctAuto}%)</span></div>
+    <div class="ot-row"><span class="k">Turnos totales / completados / cancelados</span><span>${r.totalCount} / ${r.completadosCount} / ${r.canceladosCount} · ${tasaCancelacion}% cancelación</span></div>
+
+    <div class="doc-section-title">Forma de pago</div>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Forma de pago</th><th>Turnos</th><th>Monto</th></tr></thead>
+        <tbody>${Object.entries(r.porFormaPago).sort((a,b)=>b[1].monto-a[1].monto).map(([fp,v]) => `
+          <tr><td>${fp}</td><td class="mono">${v.cantidad}</td><td class="mono">$${v.monto.toLocaleString('es-AR')}</td></tr>
+        `).join('') || `<tr><td colspan="3" style="color:var(--ink-faint)">Sin datos en este período</td></tr>`}</tbody>
+      </table>
+    </div>
+
+    <div class="doc-section-title">Gastos por categoría</div>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Categoría</th><th>Monto</th></tr></thead>
+        <tbody>${Object.entries(r.gastosPorCategoria).sort((a,b)=>b[1]-a[1]).map(([cat,monto]) => `
+          <tr><td>${cat}</td><td class="mono">$${monto.toLocaleString('es-AR')}</td></tr>
+        `).join('') || `<tr><td colspan="2" style="color:var(--ink-faint)">Sin gastos en este período</td></tr>`}</tbody>
+      </table>
+    </div>
+
+    <div class="doc-section-title">Top empresas</div>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Empresa</th><th>Lavados</th><th>Monto</th></tr></thead>
+        <tbody>${r.topEmpresas.map(e => `
+          <tr><td>${e.nombre}</td><td class="mono">${e.lavados}</td><td class="mono">$${e.monto.toLocaleString('es-AR')}</td></tr>
+        `).join('') || `<tr><td colspan="3" style="color:var(--ink-faint)">Sin lavados de empresas en este período</td></tr>`}</tbody>
+      </table>
+    </div>
+
+    <div class="doc-note">Este reporte se arma automáticamente con los turnos y gastos cargados en el sistema para el período elegido — sin planillas ni cálculos manuales.</div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn btn-primary" style="flex:1" onclick="toast('Simulado: reporte enviado por email')">Enviar por email</button>
+    </div>
+  `;
+  document.getElementById('modal-body').className = 'modal doc';
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function sectionServicios(){
+  return `
+    <div class="admin-head"><div><h1>Servicios y precios</h1><p>Configurable por tipo de vehículo</p></div>
+      <button class="btn-sm accent" onclick="openServicioModal()">+ Nuevo servicio</button></div>
+    <div class="panel-card">
+      <div class="body table-wrap">
+        <table class="data">
+          <thead><tr><th>Servicio</th><th>Aplica a</th><th>Precio</th><th></th></tr></thead>
+          <tbody>
+            ${SERVICIOS.map(s => `
+              <tr>
+                <td>${s.nombre}<div style="font-size:11.5px;color:var(--ink-faint)">${s.desc}</div></td>
+                <td>${s.vehiculos.map(v=>`<span class="chip ${v}">${v==='camion'?'🚛 Camión':'🚗 Auto'}</span>`).join(' ')}</td>
+                <td><input class="price-input mono" value="${s.precio}" onchange="updateServicioPrecio('${s.id}', this.value)"></td>
+                <td>
+                  <div style="display:flex;gap:6px">
+                    <button class="btn-sm" onclick="openServicioModal('${s.id}')">Editar</button>
+                    <button class="btn-sm" onclick="deleteServicio('${s.id}')">Quitar</button>
+                  </div>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function updateServicioPrecio(id, value){
+  const precio = parseFloat(value);
+  const s = SERVICIOS.find(s=>s.id===id);
+  if(!s || isNaN(precio) || precio<=0){ toast('Ingresá un precio válido'); return; }
+  s.precio = precio;
+  toast('Precio actualizado');
+}
+
+function deleteServicio(id){
+  if(!confirm('¿Quitar este servicio del listado?')) return;
+  const idx = SERVICIOS.findIndex(s=>s.id===id);
+  if(idx>=0) SERVICIOS.splice(idx,1);
+  toast('Servicio eliminado');
+  if(currentSection==='servicios') renderSection();
+}
+
+function openServicioModal(id){
+  const editing = !!id;
+  const s = editing ? SERVICIOS.find(s=>s.id===id) : { nombre:'', desc:'', precio:'', vehiculos:['camion'] };
+  document.getElementById('modal-body').innerHTML = `
+    <button class="close" onclick="closeModal()">×</button>
+    <h3>${editing ? 'Editar servicio' : 'Nuevo servicio'}</h3>
+    <div class="field"><label>Nombre</label><input id="s-nombre" value="${s.nombre}" placeholder="Ej: Lavado premium"></div>
+    <div class="field"><label>Descripción</label><input id="s-desc" value="${s.desc}" placeholder="Ej: Exterior + interior + cera"></div>
+    <div class="field"><label>Precio</label><input id="s-precio" type="number" value="${s.precio}" placeholder="0"></div>
+    <div class="field">
+      <label>Aplica a</label>
+      <div style="display:flex;gap:16px;padding-top:4px">
+        <label class="inline"><input type="checkbox" class="chk" id="s-camion" ${s.vehiculos.includes('camion')?'checked':''}> Camión</label>
+        <label class="inline"><input type="checkbox" class="chk" id="s-auto" ${s.vehiculos.includes('auto')?'checked':''}> Auto</label>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn btn-ghost" style="width:auto;flex:1" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveServicio(${editing ? `'${id}'` : 'null'})">Guardar servicio</button>
+    </div>
+  `;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function saveServicio(id){
+  const nombre = document.getElementById('s-nombre').value.trim();
+  const precio = parseFloat(document.getElementById('s-precio').value);
+  const vehiculos = [];
+  if(document.getElementById('s-camion').checked) vehiculos.push('camion');
+  if(document.getElementById('s-auto').checked) vehiculos.push('auto');
+  if(!nombre || isNaN(precio) || precio<=0 || vehiculos.length===0){
+    toast('Completá nombre, precio y al menos un tipo de vehículo');
+    return;
+  }
+  const desc = document.getElementById('s-desc').value.trim();
+  if(id){
+    const s = SERVICIOS.find(s=>s.id===id);
+    Object.assign(s, { nombre, desc, precio, vehiculos });
+  } else {
+    SERVICIOS.push({ id:'srv-'+Date.now(), nombre, desc, precio, vehiculos });
+  }
+  closeModal();
+  toast(id ? 'Servicio actualizado' : 'Servicio agregado');
+  if(currentSection==='servicios') renderSection();
+}
+
+// Día seleccionado en el panel "Horarios y cupos" (0=domingo..6=sábado).
+// Arranca en el día de hoy para que el admin vea primero lo más relevante.
+let horarioDiaSel = new Date().getDay();
+
+function sectionHorarios(){
+  return `
+    <div class="admin-head"><div><h1>Horarios y cupos</h1><p>Elegí un día para definir si atiende, en qué franja horaria y qué cupos tiene cada media hora.</p></div></div>
+    <div class="panel-card">
+      <div class="dow-tabs">
+        ${[1,2,3,4,5,6,0].map(d => `
+          <button class="${horarioDiaSel===d?'active':''} ${HORARIOS_CONFIG[d].abierto?'open':''}" onclick="setHorarioDia(${d})">
+            ${DOW_SHORT[d]}<span class="state"></span>
+          </button>`).join('')}
+      </div>
+      <div class="body pad" id="horario-config-body">${renderHorarioDiaConfig()}</div>
+    </div>
+  `;
+}
+
+function renderHorarioDiaConfig(){
+  const cfg = HORARIOS_CONFIG[horarioDiaSel];
+  const dowCap = DOW_LONG[horarioDiaSel].replace(/^./, c => c.toUpperCase());
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px">
+      <h3 style="margin:0;font-size:18px">${dowCap}</h3>
+      <label class="inline" style="gap:8px;font-weight:600;font-size:13.5px">
+        <input type="checkbox" class="chk" ${cfg.abierto?'checked':''} onchange="toggleDiaAbierto(this.checked)"> Atiende este día
+      </label>
+    </div>
+    ${!cfg.abierto ? `
+      <div class="closed-day" style="margin:0">
+        <span class="icon">🚫</span>
+        <div><strong>El lavadero no atiende los ${DOW_PLURAL[horarioDiaSel]}.</strong></div>
+        <div style="font-size:13px">Activá el día de arriba para configurar su horario.</div>
+      </div>
+    ` : `
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:20px">
+        <div class="field" style="margin:0;min-width:140px">
+          <label>Desde</label>
+          <select id="horario-desde" onchange="updateHorarioRango()">
+            ${TIME_OPTIONS.map(t=>`<option value="${t}" ${cfg.desde===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field" style="margin:0;min-width:140px">
+          <label>Hasta</label>
+          <select id="horario-hasta" onchange="updateHorarioRango()">
+            ${TIME_OPTIONS.map(t=>`<option value="${t}" ${cfg.hasta===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="subhead" style="margin-top:0;padding-top:0;border-top:none">Línea A — cupos por franja, tocá para alternar Camión / Auto / Libre / Cerrado</div>
+      <div class="slotcfg-grid" id="slotcfg-grid" style="padding:0 0 4px">
+        ${generateHalfHourSlots(cfg.desde, cfg.hasta).map(h => slotcfgHtml(h)).join('')}
+      </div>
+      <div class="legend-row" style="padding:0 2px;margin-top:8px;margin-bottom:22px">
+        <span><span class="legend-dot" style="background:var(--accent)"></span>Solo camión</span>
+        <span><span class="legend-dot" style="background:var(--accent-warm)"></span>Solo auto</span>
+        <span><span class="legend-dot" style="background:var(--ink-faint)"></span>Libre</span>
+        <span><span class="legend-dot" style="background:var(--crit)"></span>Cerrado, no se ofrece (ej. corte de mediodía)</span>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;border:1.5px solid var(--line);border-radius:10px 10px ${cfg.lineaBHabilitada?'0 0':'10px 10px'};padding:12px 14px;background:var(--paper-sunken)">
+        <div>
+          <div style="font-weight:700;font-size:13.5px">Línea B de contingencia</div>
+          <div style="font-size:12.5px;color:var(--ink-faint)">Si se completan los turnos de la línea A, ¿se abre una segunda línea de lavado?</div>
+        </div>
+        <label class="inline" style="gap:8px;font-weight:600;font-size:13px">
+          <input type="checkbox" class="chk" ${cfg.lineaBHabilitada?'checked':''} onchange="toggleLineaBDia(this.checked)"> Habilitada
+        </label>
+      </div>
+      ${cfg.lineaBHabilitada ? `
+        <div style="border:1.5px solid var(--line);border-top:none;border-radius:0 0 10px 10px;padding:14px;background:var(--paper-sunken)">
+          <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px">
+            <div class="field" style="margin:0;min-width:140px">
+              <label>Desde (línea B)</label>
+              <select id="horario-desde-b" onchange="updateHorarioRangoB()">
+                ${TIME_OPTIONS.map(t=>`<option value="${t}" ${cfg.lineaB.desde===t?'selected':''}>${t}</option>`).join('')}
+              </select>
+            </div>
+            <div class="field" style="margin:0;min-width:140px">
+              <label>Hasta (línea B)</label>
+              <select id="horario-hasta-b" onchange="updateHorarioRangoB()">
+                ${TIME_OPTIONS.map(t=>`<option value="${t}" ${cfg.lineaB.hasta===t?'selected':''}>${t}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="subhead" style="margin-top:0;padding-top:0;border-top:none">Línea B — cupos por franja, tocá para alternar Camión / Auto / Libre / Cerrado</div>
+          <div class="slotcfg-grid" id="slotcfg-grid-b" style="padding:0 0 4px">
+            ${generateHalfHourSlots(cfg.lineaB.desde, cfg.lineaB.hasta).map(h => slotcfgHtmlB(h)).join('')}
+          </div>
+          <div class="legend-row" style="padding:0 2px;margin-top:8px">
+            <span><span class="legend-dot" style="background:var(--accent)"></span>Solo camión</span>
+            <span><span class="legend-dot" style="background:var(--accent-warm)"></span>Solo auto</span>
+            <span><span class="legend-dot" style="background:var(--ink-faint)"></span>Libre</span>
+            <span><span class="legend-dot" style="background:var(--crit)"></span>Cerrado</span>
+          </div>
+          <div style="font-size:12px;color:var(--ink-faint);margin-top:10px">
+            El cliente nunca ve esta distinción: para él, un horario ofrecido por la línea B se muestra igual que uno de la línea A.
+          </div>
+        </div>
+      ` : ''}
+    `}
+  `;
+}
+
+function setHorarioDia(d){
+  horarioDiaSel = d;
+  if(currentSection==='horarios') renderSection();
+}
+
+function toggleDiaAbierto(checked){
+  const cfg = HORARIOS_CONFIG[horarioDiaSel];
+  cfg.abierto = checked;
+  if(checked && Object.keys(cfg.modos).length===0){
+    cfg.modos = buildDefaultModos(cfg.desde, cfg.hasta);
+  }
+  const body = document.getElementById('horario-config-body');
+  if(body) body.innerHTML = renderHorarioDiaConfig();
+  toast(checked ? 'Día habilitado' : 'Día marcado como cerrado');
+}
+
+function toggleLineaBDia(checked){
+  const cfg = HORARIOS_CONFIG[horarioDiaSel];
+  cfg.lineaBHabilitada = checked;
+  if(checked && !cfg.lineaB){
+    cfg.lineaB = defaultLineaB(cfg.desde, cfg.hasta);
+  }
+  const body = document.getElementById('horario-config-body');
+  if(body) body.innerHTML = renderHorarioDiaConfig();
+  toast(checked
+    ? `Línea B habilitada los ${DOW_PLURAL[horarioDiaSel]}: elegí abajo qué turnos ofrece`
+    : `Línea B deshabilitada los ${DOW_PLURAL[horarioDiaSel]}: esos horarios adicionales van a figurar sin cupo`);
+}
+
+function updateHorarioRango(){
+  const desde = document.getElementById('horario-desde').value;
+  const hasta = document.getElementById('horario-hasta').value;
+  if(timeToMinutes(hasta) <= timeToMinutes(desde)){
+    toast('El horario "Hasta" tiene que ser posterior al "Desde"');
+    const body = document.getElementById('horario-config-body');
+    if(body) body.innerHTML = renderHorarioDiaConfig();
+    return;
+  }
+  const cfg = HORARIOS_CONFIG[horarioDiaSel];
+  const nuevosSlots = generateHalfHourSlots(desde, hasta);
+  const modos = {};
+  nuevosSlots.forEach(h => modos[h] = cfg.modos[h] || 'libre'); // conserva lo ya configurado en la franja que se mantiene
+  cfg.desde = desde; cfg.hasta = hasta; cfg.modos = modos;
+  const body = document.getElementById('horario-config-body');
+  if(body) body.innerHTML = renderHorarioDiaConfig();
+  toast('Horario actualizado');
+}
+
+function slotcfgHtml(h){
+  const modo = HORARIOS_CONFIG[horarioDiaSel].modos[h] || 'libre';
+  return `<div class="slotcfg ${modo}" onclick="cycleSlot('${h}')"><span class="t">${h}</span><span class="m">${modo}</span></div>`;
+}
+function cycleSlot(h){
+  const order = ['libre','camion','auto','cerrado'];
+  const cfg = HORARIOS_CONFIG[horarioDiaSel];
+  const cur = cfg.modos[h] || 'libre';
+  cfg.modos[h] = order[(order.indexOf(cur)+1) % order.length];
+  document.getElementById('slotcfg-grid').innerHTML = generateHalfHourSlots(cfg.desde, cfg.hasta).map(slotcfgHtml).join('');
+}
+
+// Misma lógica que arriba, aplicada a la franja y los cupos propios de la línea B.
+function updateHorarioRangoB(){
+  const desde = document.getElementById('horario-desde-b').value;
+  const hasta = document.getElementById('horario-hasta-b').value;
+  if(timeToMinutes(hasta) <= timeToMinutes(desde)){
+    toast('El horario "Hasta" de la línea B tiene que ser posterior al "Desde"');
+    const body = document.getElementById('horario-config-body');
+    if(body) body.innerHTML = renderHorarioDiaConfig();
+    return;
+  }
+  const cfg = HORARIOS_CONFIG[horarioDiaSel];
+  const nuevosSlots = generateHalfHourSlots(desde, hasta);
+  const modos = {};
+  nuevosSlots.forEach(h => modos[h] = cfg.lineaB.modos[h] || 'libre');
+  cfg.lineaB = { desde, hasta, modos };
+  const body = document.getElementById('horario-config-body');
+  if(body) body.innerHTML = renderHorarioDiaConfig();
+  toast('Horario de línea B actualizado');
+}
+
+function slotcfgHtmlB(h){
+  const modo = HORARIOS_CONFIG[horarioDiaSel].lineaB.modos[h] || 'libre';
+  return `<div class="slotcfg ${modo}" onclick="cycleSlotB('${h}')"><span class="t">${h}</span><span class="m">${modo}</span></div>`;
+}
+function cycleSlotB(h){
+  const order = ['libre','camion','auto','cerrado'];
+  const cfg = HORARIOS_CONFIG[horarioDiaSel];
+  const cur = cfg.lineaB.modos[h] || 'libre';
+  cfg.lineaB.modos[h] = order[(order.indexOf(cur)+1) % order.length];
+  document.getElementById('slotcfg-grid-b').innerHTML = generateHalfHourSlots(cfg.lineaB.desde, cfg.lineaB.hasta).map(slotcfgHtmlB).join('');
+}
+
+function sectionEmpresas(){
+  return `
+    <div class="admin-head"><div><h1>Empresas</h1><p>Tarifas diferenciales por volumen de camiones</p></div>
+      <button class="btn-sm accent" onclick="toast('Simulado: nueva empresa agregada')">+ Nueva empresa</button></div>
+    <div class="panel-card">
+      <div class="body table-wrap">
+        <table class="data">
+          <thead><tr><th>Empresa</th><th>CUIT</th><th>Camiones / mes</th><th>Descuento</th><th>Facturación</th></tr></thead>
+          <tbody>
+            ${EMPRESAS.map(e => `
+              <tr>
+                <td>${e.nombre}</td>
+                <td class="mono">${e.cuit}</td>
+                <td class="mono">${e.camionesMes}</td>
+                <td class="mono">${e.descuento}%</td>
+                <td><span class="chip camion" style="background:var(--accent-soft);color:var(--accent)">ARCA</span> <span class="chip auto">Interna</span></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <button class="btn-sm accent" onclick="toast('Simulado: factura consolidada del día generada')">Generar factura del día</button>
+  `;
+}
+
+function sectionGastos(){
+  const gastos = gastosDelDia(isoDate(new Date()));
+  const total = gastos.reduce((a,g)=>a+g.monto,0);
+  return `
+    <div class="admin-head"><div><h1>Gastos</h1><p>Sueldos, impuestos, servicios e insumos — hoy. El historial se ve en Reportes.</p></div></div>
+    <div class="panel-card">
+      <div class="gasto-form">
+        <div class="field"><label>Categoría</label>
+          <select id="g-cat"><option>Sueldos</option><option>Impuestos</option><option>Servicios</option><option>Insumos</option><option>Otro</option></select>
+        </div>
+        <div class="field"><label>Monto</label><input id="g-monto" type="number" placeholder="0"></div>
+        <div class="field"><label>Descripción</label><input id="g-desc" placeholder="Detalle breve"></div>
+        <button class="btn-sm accent" onclick="agregarGasto()">Agregar</button>
+      </div>
+      <div class="body table-wrap">
+        <table class="data" id="gastos-table">${gastosRows()}</table>
+      </div>
+      <div style="padding:14px 18px;display:flex;justify-content:flex-end;font-weight:700" id="gastos-total">Total del día: $${total.toLocaleString('es-AR')}</div>
+    </div>
+  `;
+}
+function gastosRows(){
+  const gastos = gastosDelDia(isoDate(new Date()));
+  return `<thead><tr><th>Categoría</th><th>Descripción</th><th>Monto</th></tr></thead>
+    <tbody>${gastos.map(g=>`<tr><td>${g.categoria}</td><td>${g.desc}</td><td class="mono">$${g.monto.toLocaleString('es-AR')}</td></tr>`).join('')}</tbody>`;
+}
+function agregarGasto(){
+  const cat = document.getElementById('g-cat').value;
+  const monto = parseFloat(document.getElementById('g-monto').value);
+  const desc = document.getElementById('g-desc').value.trim() || '—';
+  if(!monto || monto<=0){ toast('Ingresá un monto válido'); return; }
+  gastosDelDia(isoDate(new Date())).push({ categoria:cat, monto, desc });
+  document.getElementById('gastos-table').innerHTML = gastosRows();
+  const total = gastosDelDia(isoDate(new Date())).reduce((a,g)=>a+g.monto,0);
+  document.getElementById('gastos-total').textContent = 'Total del día: $' + total.toLocaleString('es-AR');
+  document.getElementById('g-monto').value=''; document.getElementById('g-desc').value='';
+  toast('Gasto agregado');
+}
+
+/* ---- filtro de fecha de Reportes ---- */
+let reportesPreset = '7d';
+let reportesDesde, reportesHasta;
+(function initReportesRango(){
+  const hoy = new Date();
+  reportesHasta = isoDate(hoy);
+  const d = new Date(hoy); d.setDate(d.getDate()-6);
+  reportesDesde = isoDate(d);
+})();
+
+function setReportesPreset(preset){
+  const hoy = new Date();
+  const hastaIso = isoDate(hoy);
+  let desdeIso = hastaIso;
+  if(preset==='hoy'){ desdeIso = hastaIso; }
+  else if(preset==='7d'){ const d=new Date(hoy); d.setDate(d.getDate()-6); desdeIso=isoDate(d); }
+  else if(preset==='30d'){ const d=new Date(hoy); d.setDate(d.getDate()-29); desdeIso=isoDate(d); }
+  else if(preset==='mes'){ desdeIso = isoDate(new Date(hoy.getFullYear(), hoy.getMonth(), 1)); }
+  reportesPreset = preset;
+  if(preset!=='custom'){ reportesDesde = desdeIso; reportesHasta = hastaIso; }
+  if(currentSection==='reportes') renderSection();
+}
+
+function actualizarReportesCustom(){
+  const d = document.getElementById('reportes-desde').value;
+  const h = document.getElementById('reportes-hasta').value;
+  if(!d || !h) return;
+  if(d > h){ toast('La fecha "Desde" no puede ser posterior a "Hasta"'); return; }
+  reportesDesde = d; reportesHasta = h;
+  if(currentSection==='reportes') renderSection();
+}
+
+function formatFechaCorta(iso){ return iso.split('-').reverse().join('/'); }
+function formatRangoReportes(){
+  return reportesDesde===reportesHasta
+    ? `Datos del ${formatFechaCorta(reportesDesde)}`
+    : `Del ${formatFechaCorta(reportesDesde)} al ${formatFechaCorta(reportesHasta)}`;
+}
+
+function diasEnRango(desdeIso, hastaIso){
+  const out = [];
+  let d = new Date(desdeIso+'T00:00:00');
+  const end = new Date(hastaIso+'T00:00:00');
+  while(d <= end){ out.push(new Date(d)); d.setDate(d.getDate()+1); }
+  return out;
+}
+
+// Agrega turnos y gastos de todos los días del rango elegido. Todo sale de
+// TURNOS_POR_DIA / GASTOS_POR_DIA, las mismas fuentes que usan Agenda y
+// Gastos, así que el reporte siempre es consistente con lo cargado ahí.
+function computeReporte(desdeIso, hastaIso){
+  const dias = diasEnRango(desdeIso, hastaIso);
+  const turnosTotales = [];
+  const lavadosPorDia = [];
+  let gastosTotal = 0;
+  const gastosPorCategoria = {};
+
+  dias.forEach(d => {
+    const iso = isoDate(d);
+    const turnos = TURNOS_POR_DIA[iso] || [];
+    turnosTotales.push(...turnos);
+    lavadosPorDia.push({ label: `${d.getDate()}/${d.getMonth()+1}`, v: turnos.filter(t=>t.estado==='completado').length });
+    (GASTOS_POR_DIA[iso] || []).forEach(g => {
+      gastosTotal += g.monto;
+      gastosPorCategoria[g.categoria] = (gastosPorCategoria[g.categoria]||0) + g.monto;
+    });
+  });
+
+  const completados = turnosTotales.filter(t=>t.estado==='completado');
+  const cancelados = turnosTotales.filter(t=>t.estado==='cancelado');
+  const noCancelados = turnosTotales.filter(t=>t.estado!=='cancelado');
+  const precioDe = t => { const s = SERVICIOS.find(s=>s.nombre===t.servicio && s.vehiculos.includes(t.vehiculo)); return s ? s.precio : 0; };
+
+  const ingresos = completados.reduce((a,t)=>a+precioDe(t), 0);
+  const camiones = noCancelados.filter(t=>t.vehiculo==='camion').length;
+  const autos = noCancelados.filter(t=>t.vehiculo==='auto').length;
+
+  const porFormaPago = {};
+  completados.forEach(t=>{
+    const fp = t.formaPago || 'Sin especificar';
+    if(!porFormaPago[fp]) porFormaPago[fp] = { cantidad:0, monto:0 };
+    porFormaPago[fp].cantidad++; porFormaPago[fp].monto += precioDe(t);
+  });
+
+  const empresasNombres = EMPRESAS.map(e=>e.nombre);
+  const porEmpresa = {};
+  completados.forEach(t=>{
+    if(!empresasNombres.includes(t.cliente)) return;
+    if(!porEmpresa[t.cliente]) porEmpresa[t.cliente] = { lavados:0, monto:0 };
+    porEmpresa[t.cliente].lavados++; porEmpresa[t.cliente].monto += precioDe(t);
+  });
+  const topEmpresas = Object.entries(porEmpresa)
+    .map(([nombre,v])=>({ nombre, ...v }))
+    .sort((a,b)=>b.monto-a.monto)
+    .slice(0,5);
+
+  return {
+    lavadosPorDia, ingresos, gastosTotal, gastosPorCategoria, porFormaPago, topEmpresas,
+    camiones, autos,
+    completadosCount: completados.length, canceladosCount: cancelados.length, totalCount: turnosTotales.length,
+  };
+}
+
+function sectionReportes(){
+  const r = computeReporte(reportesDesde, reportesHasta);
+  const ticketProm = r.completadosCount ? Math.round(r.ingresos / r.completadosCount) : 0;
+  const totalVeh = r.camiones + r.autos;
+  const pctCamion = totalVeh ? Math.round((r.camiones/totalVeh)*100) : 0;
+  const pctAuto = totalVeh ? 100 - pctCamion : 0;
+  const tasaCancelacion = r.totalCount ? Math.round((r.canceladosCount/r.totalCount)*100) : 0;
+  const hoyIso = isoDate(new Date());
+
+  return `
+    <div class="admin-head"><div><h1>Reportes</h1><p>${formatRangoReportes()}</p></div>
+      <button class="btn-sm" onclick="abrirReportePDF()">Exportar PDF</button></div>
+
+    <div class="panel-card">
+      <div class="body pad" style="display:flex;gap:14px;flex-wrap:wrap;align-items:end">
+        <div class="field" style="margin:0;min-width:170px">
+          <label>Período</label>
+          <select id="reportes-preset" onchange="setReportesPreset(this.value)">
+            <option value="hoy" ${reportesPreset==='hoy'?'selected':''}>Hoy</option>
+            <option value="7d" ${reportesPreset==='7d'?'selected':''}>Últimos 7 días</option>
+            <option value="30d" ${reportesPreset==='30d'?'selected':''}>Últimos 30 días</option>
+            <option value="mes" ${reportesPreset==='mes'?'selected':''}>Este mes</option>
+            <option value="custom" ${reportesPreset==='custom'?'selected':''}>Personalizado</option>
+          </select>
+        </div>
+        ${reportesPreset==='custom' ? `
+          <div class="field" style="margin:0"><label>Desde</label><input type="date" id="reportes-desde" value="${reportesDesde}" max="${hoyIso}" onchange="actualizarReportesCustom()"></div>
+          <div class="field" style="margin:0"><label>Hasta</label><input type="date" id="reportes-hasta" value="${reportesHasta}" max="${hoyIso}" onchange="actualizarReportesCustom()"></div>
+        ` : ''}
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-tile"><div class="label">GANANCIA NETA</div><div class="value">$${(r.ingresos-r.gastosTotal).toLocaleString('es-AR')}</div><div class="delta">Período elegido</div></div>
+      <div class="stat-tile"><div class="label">INGRESOS</div><div class="value">$${r.ingresos.toLocaleString('es-AR')}</div><div class="delta">${r.completadosCount} lavados completados</div></div>
+      <div class="stat-tile"><div class="label">GASTOS</div><div class="value">$${r.gastosTotal.toLocaleString('es-AR')}</div><div class="delta warn">Sueldos, insumos, servicios</div></div>
+      <div class="stat-tile"><div class="label">TICKET PROMEDIO</div><div class="value">$${ticketProm.toLocaleString('es-AR')}</div><div class="delta">Por lavado completado</div></div>
+    </div>
+
+    <div class="panel-card chart-card">
+      <div class="head"><div><h3>Lavados por día</h3><div class="sub">Cantidad de lavados completados, día por día</div></div></div>
+      <div class="body" id="chart-holder"></div>
+    </div>
+
+    <div class="split-row">
+      <div class="split-card"><div class="n">${pctCamion}%</div><div class="l">Camiones sobre el total lavado (${r.camiones})</div></div>
+      <div class="split-card"><div class="n">${pctAuto}%</div><div class="l">Autos sobre el total lavado (${r.autos})</div></div>
+    </div>
+
+    <div class="panel-card">
+      <div class="head"><div><h3>Forma de pago</h3><div class="sub">Ingresos por método de cobro</div></div></div>
+      <div class="body table-wrap">
+        <table class="data">
+          <thead><tr><th>Forma de pago</th><th>Turnos</th><th>Monto</th></tr></thead>
+          <tbody>
+            ${Object.entries(r.porFormaPago).sort((a,b)=>b[1].monto-a[1].monto).map(([fp,v]) => `
+              <tr><td>${fp}</td><td class="mono">${v.cantidad}</td><td class="mono">$${v.monto.toLocaleString('es-AR')}</td></tr>
+            `).join('') || `<tr><td colspan="3" style="color:var(--ink-faint)">Sin lavados completados en este período</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel-card">
+      <div class="head"><div><h3>Gastos por categoría</h3><div class="sub">Total del período elegido</div></div></div>
+      <div class="body table-wrap">
+        <table class="data">
+          <thead><tr><th>Categoría</th><th>Monto</th></tr></thead>
+          <tbody>
+            ${Object.entries(r.gastosPorCategoria).sort((a,b)=>b[1]-a[1]).map(([cat,monto]) => `
+              <tr><td>${cat}</td><td class="mono">$${monto.toLocaleString('es-AR')}</td></tr>
+            `).join('') || `<tr><td colspan="2" style="color:var(--ink-faint)">Sin gastos cargados en este período</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel-card">
+      <div class="head"><div><h3>Top empresas</h3><div class="sub">Por facturación, dentro del período elegido</div></div></div>
+      <div class="body table-wrap">
+        <table class="data">
+          <thead><tr><th>Empresa</th><th>Lavados</th><th>Monto</th></tr></thead>
+          <tbody>
+            ${r.topEmpresas.map(e => `
+              <tr><td>${e.nombre}</td><td class="mono">${e.lavados}</td><td class="mono">$${e.monto.toLocaleString('es-AR')}</td></tr>
+            `).join('') || `<tr><td colspan="3" style="color:var(--ink-faint)">Sin lavados de empresas en este período</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel-card">
+      <div class="head"><div><h3>Resumen de turnos</h3></div></div>
+      <div class="body pad" style="display:flex;gap:28px;flex-wrap:wrap">
+        <div><div style="font-family:'IBM Plex Mono';font-size:11px;color:var(--ink-faint)">TOTAL</div><div style="font-size:22px;font-weight:700">${r.totalCount}</div></div>
+        <div><div style="font-family:'IBM Plex Mono';font-size:11px;color:var(--ink-faint)">COMPLETADOS</div><div style="font-size:22px;font-weight:700;color:var(--good)">${r.completadosCount}</div></div>
+        <div><div style="font-family:'IBM Plex Mono';font-size:11px;color:var(--ink-faint)">CANCELADOS</div><div style="font-size:22px;font-weight:700;color:var(--crit)">${r.canceladosCount}</div></div>
+        <div><div style="font-family:'IBM Plex Mono';font-size:11px;color:var(--ink-faint)">TASA DE CANCELACIÓN</div><div style="font-size:22px;font-weight:700">${tasaCancelacion}%</div></div>
+      </div>
+    </div>
+  `;
+}
+
+function drawChart(){
+  const holder = document.getElementById('chart-holder');
+  if(!holder) return;
+  const data = computeReporte(reportesDesde, reportesHasta).lavadosPorDia;
+  const max = Math.max(1, ...data.map(d=>d.v));
+  holder.innerHTML = `<div class="bars">
+    ${data.map(d => `
+      <div class="bar-col">
+        <div class="val">${d.v}</div>
+        <div class="bar" style="height:${Math.max(4,(d.v/max)*140)}px" title="${d.label}: ${d.v} lavados"></div>
+        <div class="lbl">${d.label}</div>
+      </div>`).join('')}
+  </div>`;
+}
+</script>
+
+</body>
+</html>
