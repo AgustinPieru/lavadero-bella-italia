@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sistema Bella Italia</title>
+<meta name="description" content="Propuesta de sistema de gestión y turnero para lavadero de camiones y autos.">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Mulish:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  /* Misma paleta e identidad que la demo: tema claro fijo a partir de los
+     verdes del isologo (aro verde oscuro, interior blanco, camión verde
+     medio, ola celeste-agua), y Mulish como tipografía única. */
+  :root{
+    --paper:#f5faf7;
+    --paper-raised:#ffffff;
+    --ink:#14261f;
+    --ink-soft:#4b6459;
+    --ink-faint:#84958a;
+    --accent:#1f7a54;
+    --accent-deep:#163d30;
+    --accent-ink:#ffffff;
+    --accent-warm:#d97b3c;
+    --line:rgba(20,38,31,0.12);
+    --line-strong:rgba(20,38,31,0.22);
+    --shadow: 0 1px 2px rgba(20,38,31,0.06), 0 8px 24px -12px rgba(20,38,31,0.16);
+    --good:#0e7490;
+    --warn:#a5680f;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Mulish', system-ui, sans-serif;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:var(--accent); color:var(--accent-ink); }
+
+  .display{ font-family:'Mulish', system-ui, sans-serif; font-weight:800; letter-spacing:-0.01em; text-wrap:balance; }
+  .mono{ font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums; }
+
+  a{ color:var(--accent); }
+
+  /* ---- shell ---- */
+  .sheet{ max-width:920px; margin:0 auto; padding: 0 24px 96px; }
+
+  header.masthead{
+    padding:56px 24px 40px;
+    border-bottom:1px solid var(--line);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent 60%),
+      var(--paper);
+  }
+  .masthead-inner{ max-width:920px; margin:0 auto; display:flex; flex-direction:column; gap:18px; }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--accent); display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow .dot{ width:6px; height:6px; border-radius:50%; background:var(--accent-warm); flex:none; }
+  h1.title{ font-size:clamp(38px,6vw,64px); line-height:0.98; font-weight:800; margin:0; }
+  .subtitle{ font-size:19px; color:var(--ink-soft); max-width:56ch; margin:0; }
+  .meta-row{ display:flex; flex-wrap:wrap; gap:24px 40px; margin-top:8px; }
+  .meta-item{ display:flex; flex-direction:column; gap:2px; }
+  .meta-item .k{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-faint); }
+  .meta-item .v{ font-size:15px; font-weight:600; }
+
+  /* ---- nav ---- */
+  nav.toc{
+    position:sticky; top:0; z-index:5;
+    background:color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  nav.toc .row{
+    max-width:920px; margin:0 auto; padding:0 24px;
+    display:flex; gap:4px; overflow-x:auto; scrollbar-width:none;
+  }
+  nav.toc .row::-webkit-scrollbar{ display:none; }
+  nav.toc a{
+    flex:none; font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.04em;
+    text-decoration:none; color:var(--ink-soft); padding:14px 12px; border-bottom:2px solid transparent;
+    white-space:nowrap;
+  }
+  nav.toc a:hover{ color:var(--ink); border-bottom-color:var(--line-strong); }
+
+  /* ---- sections ---- */
+  section{ padding-top:64px; scroll-margin-top:56px; }
+  .kicker{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--accent-warm); margin:0 0 10px;
+  }
+  h2.section-title{ font-size:clamp(28px,4vw,38px); font-weight:700; margin:0 0 18px; }
+  p.lede{ font-size:17.5px; color:var(--ink-soft); max-width:66ch; }
+  .prose{ max-width:66ch; }
+  .prose p{ margin:0 0 14px; }
+  .prose p:last-child{ margin-bottom:0; }
+
+  .callout{
+    background:var(--paper-raised); border:1px solid var(--line); border-radius:10px;
+    padding:22px 24px; box-shadow:var(--shadow);
+  }
+  .callout.summary{ display:grid; gap:18px; }
+  .summary-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  @media (max-width:640px){ .summary-grid{ grid-template-columns:1fr; } }
+  .summary-grid .num{ font-family:'Mulish'; font-size:40px; font-weight:700; color:var(--accent); line-height:1; }
+  .summary-grid .label{ font-size:13.5px; color:var(--ink-soft); margin-top:6px; }
+
+  /* module cards */
+  .modules{ display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:8px; }
+  @media (max-width:720px){ .modules{ grid-template-columns:1fr; } }
+  .module{
+    background:var(--paper-raised); border:1px solid var(--line); border-radius:12px;
+    padding:26px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:14px;
+  }
+  .module .tag{
+    align-self:flex-start; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.1em; text-transform:uppercase;
+    color:var(--accent); background:color-mix(in srgb, var(--accent) 14%, transparent); padding:4px 10px; border-radius:999px;
+  }
+  .module h3{ font-size:22px; margin:0; font-weight:700; }
+  .module ul{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:9px; }
+  .module li{ font-size:15px; color:var(--ink-soft); padding-left:18px; position:relative; }
+  .module li::before{ content:'—'; position:absolute; left:0; color:var(--accent-warm); }
+
+  /* challenge callouts */
+  .challenges{ display:flex; flex-direction:column; gap:16px; margin-top:8px; }
+  .challenge{
+    display:grid; grid-template-columns:auto 1fr; gap:18px; align-items:start;
+    background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:20px 22px;
+    box-shadow:var(--shadow);
+  }
+  .challenge .q-mark{
+    font-family:'Mulish'; font-size:34px; font-weight:700; color:var(--line-strong); line-height:1;
+  }
+  .challenge h4{ margin:0 0 6px; font-size:16.5px; font-weight:700; }
+  .challenge p{ margin:0; font-size:15px; color:var(--ink-soft); }
+
+  /* roadmap */
+  .roadmap{ display:flex; flex-direction:column; margin-top:8px; }
+  .phase{ display:grid; grid-template-columns:64px 1fr; gap:20px; padding:22px 0; border-top:1px solid var(--line); }
+  .phase:first-child{ border-top:none; }
+  .phase .n{ font-family:'Mulish'; font-size:44px; font-weight:800; color:var(--accent); line-height:1; }
+  .phase h3{ margin:0 0 10px; font-size:20px; }
+  .phase p{ margin:0; color:var(--ink-soft); font-size:15px; max-width:62ch; }
+  .phase .deliverables{ margin:10px 0 0; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:8px; }
+  .phase .deliverables li{
+    font-size:12.5px; font-family:'IBM Plex Mono'; color:var(--ink-soft); border:1px solid var(--line); border-radius:6px; padding:4px 9px;
+  }
+
+  /* pricing */
+  .pricing-table{ width:100%; border-collapse:collapse; margin-top:8px; }
+  .pricing-table th, .pricing-table td{ text-align:left; padding:14px 16px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .pricing-table thead th{
+    font-family:'IBM Plex Mono'; font-size:11.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-faint);
+    border-bottom:1px solid var(--line-strong);
+  }
+  .pricing-table td.item{ font-weight:600; }
+  .pricing-table td.item .sub{ display:block; font-weight:400; font-size:13px; color:var(--ink-faint); margin-top:3px; }
+  .pricing-table td.range{ font-family:'IBM Plex Mono'; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .table-wrap{ overflow-x:auto; }
+  .note{ font-size:13.5px; color:var(--ink-faint); margin-top:14px; }
+
+  /* cta */
+  .cta{
+    margin-top:64px; padding:36px 32px; border-radius:14px;
+    background:linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 60%, var(--ink)));
+    color:var(--accent-ink); display:flex; flex-direction:column; gap:6px;
+  }
+  .cta h2{ margin:0; font-size:26px; font-family:'Mulish'; font-weight:700; }
+  .cta p{ margin:0; opacity:0.92; max-width:56ch; }
+  .cta .steps{ margin:14px 0 0; padding:0; list-style:none; display:flex; flex-direction:column; gap:6px; font-family:'IBM Plex Mono'; font-size:13.5px; }
+
+  footer{ margin-top:56px; padding-top:24px; border-top:1px solid var(--line); font-size:13px; color:var(--ink-faint); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+
+  @media (prefers-reduced-motion: reduce){ * { scroll-behavior:auto !important; } }
+  html{ scroll-behavior:smooth; }
+</style>
+</head>
+<body>
+
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="eyebrow"><span class="dot"></span>Propuesta técnica &amp; comercial</div>
+    <h1 class="title display">Sistema de gestión<br>Bella&nbsp;Italia</h1>
+    <p class="subtitle">Digitalización del turnero y la administración del lavadero: menos planillas, más control del negocio.</p>
+    <div class="meta-row">
+      <div class="meta-item"><span class="k">Preparado para</span><span class="v">Lavadero Bella Italia</span></div>
+      <div class="meta-item"><span class="k">Fecha</span><span class="v">Septiembre 2026</span></div>
+      <div class="meta-item"><span class="k">Alcance</span><span class="v">Turnero + Panel administrativo</span></div>
+      <div class="meta-item"><span class="k">Versión</span><span class="v mono">1.0</span></div>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="row">
+    <a href="#resumen">Resumen</a>
+    <a href="#diagnostico">Diagnóstico</a>
+    <a href="#solucion">Solución</a>
+    <a href="#desafios">Puntos clave</a>
+    <a href="#arquitectura">Arquitectura</a>
+    <a href="#fases">Plan de fases</a>
+    <a href="#inversion">Inversión</a>
+    <a href="#siguientes">Próximos pasos</a>
+  </div>
+</nav>
+
+<div class="sheet">
+
+  <section id="resumen">
+    <p class="kicker">01 — Resumen ejecutivo</p>
+    <h2 class="section-title">Un sistema, dos puertas de entrada</h2>
+    <p class="lede">Bella Italia hoy administra turnos, control diario y facturación en papel. Proponemos un sistema web con dos frentes conectados entre sí: un <strong>turnero público</strong> para que las empresas de transporte y los particulares reserven su lavado, y un <strong>panel administrativo</strong> donde el lavadero configura precios, controla el día y ve la contabilidad del negocio en tiempo real.</p>
+    <div class="callout summary" style="margin-top:28px;">
+      <div class="summary-grid">
+        <div>
+          <div class="num">2</div>
+          <div class="label">Módulos integrados: turnero público y panel administrativo, una sola base de datos.</div>
+        </div>
+        <div>
+          <div class="num">2</div>
+          <div class="label">Etapas de entrega, para empezar a usar el sistema completo y sumar mejoras después.</div>
+        </div>
+        <div>
+          <div class="num">0</div>
+          <div class="label">Planillas en papel necesarias una vez implementado: orden de trabajo, control diario y reportes salen del sistema.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="diagnostico">
+    <p class="kicker">02 — Diagnóstico</p>
+    <h2 class="section-title">Lo que hoy consume tiempo</h2>
+    <div class="prose">
+      <p>El lavadero atiende principalmente camiones de empresas de transporte —con tarifas propias por cliente— y en menor medida autos particulares. Cada camión que ingresa genera una orden de trabajo (una copia para el cliente, otra para el lavadero), y al cierre del día se completa a mano una planilla de control con todo lo que se lavó. La facturación a las empresas se arma después, sumando manualmente los camiones lavados durante el día.</p>
+      <p>Esa carga manual repetida es tiempo que no se destina a atender otos asuntos, y hace que la información de contabilidad —gastos de sueldos, impuestos, servicios, ganancia real por día o por empresa— quede dispersa entre planillas y no esté disponible para tomar decisiones.</p>
+    </div>
+  </section>
+
+  <section id="solucion">
+    <p class="kicker">03 — Solución propuesta</p>
+    <h2 class="section-title">Panel administrativo y turnero, en un solo sistema</h2>
+    <p class="lede">Ambos módulos comparten la misma base de turnos, servicios y tarifas: lo que se configura en el panel se refleja al instante en lo que ve el cliente al reservar.</p>
+
+    <div class="modules">
+      <div class="module">
+        <span class="tag">Panel administrativo</span>
+        <h3>Para el equipo del lavadero</h3>
+        <ul>
+          <li>Configuración de servicios, tipos de vehículo, precios y horarios de atención.</li>
+          <li>Registro de clientes particulares y de empresa, con alta manual desde mostrador o teléfono.</li>
+          <li>Tarifas diferenciales por empresa, para las que llevan más o menos volumen de camiones.</li>
+          <li>Agenda del día con línea de trabajo A y línea B de contingencia, con carga, edición y baja de turnos para quien llega sin reserva previa.</li>
+          <li>Orden de trabajo digital con generación de PDF, lista para entregar o enviar.</li>
+          <li>Control diario armado automáticamente a partir de los lavados completados.</li>
+          <li>Carga de gastos: sueldos, impuestos, servicios e insumos.</li>
+          <li>Facturación consolidada diaria a empresas, de 1 a n camiones por comprobante.</li>
+          <li>Reportes de contabilidad: cantidad de lavados, ingresos, gastos y ganancia por período.</li>
+          <li>Moderación de reseñas: aprobar u ocultar antes de que se muestren públicamente.</li>
+        </ul>
+      </div>
+      <div class="module">
+        <span class="tag">Turnero público</span>
+        <h3>Para los clientes</h3>
+        <ul>
+          <li>Reserva de turno sin necesidad de crear usuario ni contraseña.</li>
+          <li>Selección de tipo de vehículo (camión o auto) y tipo de servicio.</li>
+          <li>Disponibilidad real de horarios, respetando los cupos configurados por el lavadero.</li>
+          <li>Datos precargados automáticamente en visitas siguientes desde el mismo dispositivo.</li>
+          <li>Confirmación y recordatorio de turno.</li>
+          <li>Al completarse el lavado, le llega un link para calificar el servicio (estrellas + comentario).</li>
+          <li>Reseñas aprobadas visibles en el turnero, como respaldo para quien todavía no reservó.</li>
+          <li>Pensado mobile-first: la mayoría de los clientes va a reservar desde el celular.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="desafios">
+    <p class="kicker">04 — Puntos clave del relevamiento</p>
+    <h2 class="section-title">Cómo resolvemos lo específico del negocio</h2>
+    <p class="lede">Cuatro cuestiones planteadas en la reunión que no tienen una respuesta "de manual" y que definen buena parte del diseño del sistema.</p>
+
+    <div class="challenges">
+      <div class="challenge">
+        <span class="q-mark">?</span>
+        <div>
+          <h4>¿Cómo precargar los datos del cliente sin pedirle que se registre?</h4>
+          <p>Cada cliente accede al turnero por un link. El sistema guarda sus datos (contacto, vehículo habitual) en el propio navegador del dispositivo desde el que reservó, así que la próxima vez el formulario ya viene completo. No hace falta usuario ni contraseña. Para empresas frecuentes, se puede sumar un link propio que además precarga su tarifa diferencial.</p>
+        </div>
+      </div>
+      <div class="challenge">
+        <span class="q-mark">?</span>
+        <div>
+          <h4>¿Cómo evitar que un auto ocupe el turno de un camión?</h4>
+          <p>Los horarios se configuran por franja y por tipo de vehículo: el admin puede marcar bloques como "solo camión", "solo auto" o "libre". El turnero público respeta esa configuración automáticamente al mostrar la disponibilidad, sin intervención manual del lavadero.</p>
+        </div>
+      </div>
+      <div class="challenge">
+        <span class="q-mark">?</span>
+        <div>
+          <h4>¿Qué pasa cuando se llenan los turnos del día?</h4>
+          <p>El sistema ofrece la línea de trabajo B solo cuando la línea A está completa para ese horario, tal como lo manejan hoy.</p>
+        </div>
+      </div>
+      <div class="challenge">
+        <span class="q-mark">?</span>
+        <div>
+          <h4>¿Cómo conviven la facturación fiscal (ARCA) y la informal?</h4>
+          <p>Cada lavado queda registrado con un tipo de comprobante: fiscal (vía ARCA, ex AFIP) o interno. Los reportes de contabilidad muestran ambos por separado y combinados, según lo que el lavadero necesite ver. La integración con ARCA requiere el certificado digital y CUIT del lavadero.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="arquitectura">
+    <p class="kicker">05 — Cómo funciona</p>
+    <h2 class="section-title">Una base simple de mantener y escalar</h2>
+    <div class="prose">
+      <p>El sistema es una aplicación web: no hay nada que instalar, se accede desde cualquier navegador, en el celular o la computadora, con una parte pública para el turnero y una parte protegida con usuario y contraseña para el panel administrativo. Se construye con tecnología estándar de la industria, elegida para que sea simple de mantener en el tiempo y pueda crecer con el negocio sin tener que rehacerse de cero.</p>
+      <p>Los documentos —órdenes de trabajo, control diario y reportes de contabilidad— se generan desde el propio sistema en PDF, y también se pueden exportar a Google Drive o en formato CSV para seguir trabajándolos en una planilla si hace falta. Todo se puede enviar por WhatsApp o email en el momento, sin descargar y adjuntar manualmente.</p>
+    </div>
+  </section>
+
+  <section id="fases">
+    <p class="kicker">06 — Plan de implementación</p>
+    <h2 class="section-title">Dos etapas, sistema completo desde la primera</h2>
+    <p class="lede">La primera etapa entrega el sistema completo de uso diario: turnero, agenda y contabilidad, incluida la facturación. La segunda etapa queda abierta para las mejoras que surjan una vez que el equipo lo esté usando todos los días.</p>
+
+    <div class="roadmap">
+      <div class="phase">
+        <div class="n mono">01</div>
+        <div>
+          <h3>Sistema completo</h3>
+          <p>Turnero público, configuración de servicios y horarios, agenda con línea A/B, órdenes de trabajo digitales, control diario automático, carga de gastos, tarifas diferenciales por empresa, facturación consolidada (ARCA e interna), reseñas de clientes y reportes de contabilidad, con envío de documentos por WhatsApp y email.</p>
+          <ul class="deliverables">
+            <li>Turnero sin registro</li>
+            <li>Agenda camión/auto</li>
+            <li>Orden de trabajo en PDF</li>
+            <li>Control diario</li>
+            <li>Carga de gastos</li>
+            <li>Tarifas por empresa</li>
+            <li>Facturación ARCA + interna</li>
+            <li>Envío por WhatsApp/email</li>
+            <li>Reseñas de clientes</li>
+            <li>Reportes de contabilidad</li>
+          </ul>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="n mono">02</div>
+        <div>
+          <h3>Mejoras a demanda</h3>
+          <p>Ajustes que surjan del uso diario: reglas más finas de cupos, identificación liviana para empresas frecuentes, y evaluación de una segunda sucursal si el negocio lo requiere.</p>
+          <ul class="deliverables">
+            <li>Reglas de cupos avanzadas</li>
+            <li>Perfiles de empresa</li>
+            <li>Multi-sucursal (a evaluar)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="inversion">
+    <p class="kicker">07 — Inversión</p>
+    <h2 class="section-title">Costo de desarrollo y costos operativos</h2>
+    <p class="lede">El desarrollo tiene un costo cerrado. Los costos operativos son de servicios de terceros (hosting, email, dominio y mensajería), se pagan en dólares y se facturan en pesos al tipo de cambio del día.</p>
+    <div class="table-wrap">
+      <table class="pricing-table">
+        <thead>
+          <tr><th>Concepto</th><th>Incluye</th><th>Costo</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="item">Desarrollo<span class="sub">Fase 1 — Sistema completo</span></td>
+            <td>Turnero, agenda, órdenes de trabajo, control diario, gastos, tarifas por empresa, facturación ARCA + interna, reportes de contabilidad. Pago único, contra sistema implementado y funcionando.</td>
+            <td class="range">$ 850.000 ARS</td>
+          </tr>
+          <tr>
+            <td class="item">Fase 2<span class="sub">Mejoras a demanda</span></td>
+            <td>A cotizar por alcance una vez definidas las mejoras prioritarias.</td>
+            <td class="range">A convenir</td>
+          </tr>
+          <tr>
+            <td class="item">Hosting<span class="sub">Mensual, desde el lanzamiento</span></td>
+            <td>Alojamiento de la aplicación y la base de datos.</td>
+            <td class="range">USD 5 / mes</td>
+          </tr>
+          <tr>
+            <td class="item">Email SMTP<span class="sub">Mensual, desde el lanzamiento</span></td>
+            <td>Servicio de envío de emails (confirmaciones, facturas, reportes).</td>
+            <td class="range">USD 5 / mes</td>
+          </tr>
+          <tr>
+            <td class="item">Mensajes de WhatsApp<span class="sub">Meta Business API</span></td>
+            <td>Meta cobra por conversación iniciada (confirmación de turno, envío de orden de trabajo, etc.); el total mensual depende del volumen de turnos.</td>
+            <td class="range">USD 0,06 / mensaje</td>
+          </tr>
+          <tr>
+            <td class="item">Dominio<span class="sub">Renovación anual</span></td>
+            <td>Registro y renovación del dominio del sistema.</td>
+            <td class="range">USD 18 / año</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">La forma de pago y el cronograma de entregas del desarrollo se coordinan con el lavadero, sin inconveniente en adaptarlos — es charlable. Los costos operativos (hosting, email, dominio y WhatsApp) están fuera del pago de desarrollo y corren por cuenta del lavadero desde el lanzamiento.</p>
+  </section>
+
+  <div class="cta" id="siguientes">
+    <h2>Próximos pasos</h2>
+    <p>Para avanzar, necesitamos confirmar el listado de servicios y precios actuales, los datos fiscales para la integración con ARCA, y ver juntos una demo navegable del turnero y el panel. Además quedan pendientes de definir el detalle de los reportes de contabilidad (qué datos exactos tienen que mostrar y cómo se arman) y la URL o dominio donde va a vivir el sistema.</p>
+    <ul class="steps">
+      <li>→ Revisión de esta propuesta y ajustes de alcance</li>
+      <li>→ Demo interactiva</li>
+      <li>→ Validar el detalle de los reportes de contabilidad</li>
+      <li>→ Definir la URL / dominio del sistema (propio del lavadero o uno nuevo a registrar)</li>
+      <li>→ Cierre de propuesta y arranque de Fase 1</li>
+    </ul>
+  </div>
+
+  <footer>
+    <span>Bella Italia — Sistema de gestión y turnero</span>
+    <span class="mono">Propuesta v1.0 · Septiembre 2026</span>
+  </footer>
+</div>
+
+</body>
+</html>
