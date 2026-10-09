@@ -128,6 +128,13 @@ El lavadero tiene **una sola línea de trabajo** (un lavado por turno) con posib
   el admin (no hardcodeados).
 - Los precios de los servicios son configurables desde el admin, con posibilidad de tarifa diferencial
   por empresa (override del precio base).
+- **Confidencialidad de tarifas entre empresas**: la tarifa diferencial de una empresa es información
+  privada de esa empresa — ninguna otra empresa ni cliente particular puede ver, inferir o acceder a los
+  precios/descuentos negociados con otras empresas. Esto aplica en particular al link/token dedicado de
+  empresa (ver sección 4): ese link solo puede precargar y mostrar la tarifa de **la empresa dueña del
+  link**, nunca la de otra. El panel admin sí ve todas las tarifas (es información interna del lavadero),
+  pero ninguna superficie de cara al cliente —turnero público, confirmaciones, comprobantes, reseñas—
+  puede exponer precios o condiciones comerciales de una empresa a otra.
 - Toda orden de trabajo se genera "por duplicado" en el sentido de que el sistema guarda una copia
   interna y genera un PDF entregable al cliente (reemplazando el papel carbónico).
 - El control diario se arma automáticamente a partir de los turnos completados del día, sin carga manual.
