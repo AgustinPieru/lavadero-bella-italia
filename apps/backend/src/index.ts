@@ -8,6 +8,7 @@ import rateLimit from 'express-rate-limit';
 import { env } from './config/env';
 import prisma from './lib/prisma';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
+import authRoutes from './modules/auth/auth.routes';
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.get('/api/health/db', async (_req, res) => {
 });
 
 // Rutas de módulos se van agregando acá a medida que avanzamos de etapa.
+app.use('/api/v1/auth', authRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
