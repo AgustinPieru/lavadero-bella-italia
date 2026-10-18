@@ -23,8 +23,8 @@ function Tile({ label, value, detail }: { label: string; value: string; detail: 
 export default function TurnoStatTiles({ turnos }: { turnos: Turno[] }) {
   const noCancelados = turnos.filter((t) => t.estado !== 'CANCELADO');
   const completados = turnos.filter((t) => t.estado === 'COMPLETADO');
-  const camiones = noCancelados.filter((t) => t.cliente.vehiculo === 'CAMION').length;
-  const autos = noCancelados.filter((t) => t.cliente.vehiculo === 'AUTO').length;
+  const camiones = noCancelados.filter((t) => t.vehiculo.tipo === 'CAMION').length;
+  const autos = noCancelados.filter((t) => t.vehiculo.tipo === 'AUTO').length;
   const ingresos = completados.reduce((a, t) => a + t.servicio.precio, 0);
   const lineaB = turnos.filter((t) => t.linea === 'B').length;
 

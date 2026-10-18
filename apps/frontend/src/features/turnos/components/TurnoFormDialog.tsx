@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -12,9 +12,9 @@ import {
   Divider,
   Typography,
 } from '@mui/material';
-import { useClientes, Cliente, VehiculoTipo } from '@/features/clientes/api/useClientes';
-import ClienteQuickCreateDialog from '@/features/clientes/components/ClienteQuickCreateDialog';
-import { useServicios, useSubtipos } from '@/features/servicios/api/useServicios';
+import { useClientes, Cliente } from '@/features/clientes/api/useClientes';
+import ClienteFormDialog from '@/features/clientes/components/ClienteFormDialog';
+import { useServicios } from '@/features/servicios/api/useServicios';
 import { useCreateTurno, useUpdateTurno, Turno, Linea, FormaPago } from '../api/useTurnos';
 import { HORAS_AGENDA } from '@/lib/timeSlots';
 import { formatPesos } from '@/lib/format';
@@ -42,10 +42,8 @@ export default function TurnoFormDialog({ open, onClose, fecha, turno }: Props) 
   const updateTurno = useUpdateTurno(fecha);
 
   const [clienteId, setClienteId] = useState<number | ''>('');
-  const [vehiculo, setVehiculo] = useState<VehiculoTipo>('CAMION');
-  const [subtipo, setSubtipo] = useState('');
+  const [vehiculoId, setVehiculoId] = useState<number | ''>('');
   const [servicioId, setServicioId] = useState<number | ''>('');
-  const [patente, setPatente] = useState('');
   const [hora, setHora] = useState(HORAS_AGENDA[0]);
   const [linea, setLinea] = useState<Linea>('A');
   const [formaPago, setFormaPago] = useState<FormaPago>('CONTADO');
@@ -54,19 +52,23 @@ export default function TurnoFormDialog({ open, onClose, fecha, turno }: Props) 
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const [error, setError] = useState('');
 
-  const { data: subtipos } = useSubtipos(vehiculo);
-  const { data: servicios } = useServicios(vehiculo, subtipo);
+  const clienteSeleccionado = clientes?.find((c) => c.id === clienteId);
+  const vehiculosDelCliente = useMemo(
+    () => (clienteSeleccionado?.vehiculos ?? []).filter((v) => v.activo),
+    [clienteSeleccionado]
+  );
+  const vehiculoSeleccionado = vehiculosDelCliente.find((v) => v.id === vehiculoId);
+
+  const { data: servicios } = useServicios(vehiculoSeleccionado?.tipo, vehiculoSeleccionado?.subtipo);
 
   // Reinicia (o precarga, si es edición) el formulario cada vez que se abre.
   useEffect(() => {
     if (!open) return;
     setError('');
     if (turno) {
-      setClienteId(turno.clienteId);
-      setVehiculo(turno.cliente.vehiculo);
-      setSubtipo(turno.servicio.subtipo);
+      setClienteId(turno.vehiculo.clienteId);
+      setVehiculoId(turno.vehiculoId);
       setServicioId(turno.servicioId);
-      setPatente(turno.patente);
       setHora(turno.hora);
       setLinea(turno.linea);
       setFormaPago(turno.formaPago);
@@ -74,10 +76,8 @@ export default function TurnoFormDialog({ open, onClose, fecha, turno }: Props) 
       setFacturar(turno.facturar);
     } else {
       setClienteId('');
-      setVehiculo('CAMION');
-      setSubtipo('');
+      setVehiculoId('');
       setServicioId('');
-      setPatente('');
       setHora(HORAS_AGENDA[0]);
       setLinea('A');
       setFormaPago('CONTADO');
@@ -91,44 +91,29 @@ export default function TurnoFormDialog({ open, onClose, fecha, turno }: Props) 
       setQuickCreateOpen(true);
       return;
     }
-    const id = Number(value);
-    setClienteId(id);
-    const cliente = clientes?.find((c) => c.id === id);
-    if (cliente) {
-      setVehiculo(cliente.vehiculo);
-      setSubtipo(cliente.subtipo);
-      setPatente(cliente.patente ?? '');
-      setServicioId('');
-    }
+    setClienteId(Number(value));
+    setVehiculoId('');
+    setServicioId('');
   };
 
   const handleClienteCreado = (cliente: Cliente) => {
     setQuickCreateOpen(false);
     setClienteId(cliente.id);
-    setVehiculo(cliente.vehiculo);
-    setSubtipo(cliente.subtipo);
-    setPatente(cliente.patente ?? '');
-    setServicioId('');
-  };
-
-  const handleVehiculoChange = (value: VehiculoTipo) => {
-    setVehiculo(value);
-    setSubtipo('');
+    setVehiculoId(cliente.vehiculos[0]?.id ?? '');
     setServicioId('');
   };
 
   const handleSubmit = async () => {
     setError('');
-    if (!clienteId || !servicioId || !patente.trim()) {
-      setError('Completá cliente, servicio y patente');
+    if (!vehiculoId || !servicioId) {
+      setError('Completá cliente, vehículo y servicio');
       return;
     }
     const data = {
       hora,
       linea,
-      clienteId: Number(clienteId),
+      vehiculoId: Number(vehiculoId),
       servicioId: Number(servicioId),
-      patente: patente.trim(),
       formaPago,
       pagado,
       facturar,
@@ -168,27 +153,21 @@ export default function TurnoFormDialog({ open, onClose, fecha, turno }: Props) 
               </MenuItem>
             </TextField>
 
-            <TextField label="Patente" value={patente} onChange={(e) => setPatente(e.target.value)} required fullWidth />
-
-            <TextField select label="Tipo de vehículo" value={vehiculo} onChange={(e) => handleVehiculoChange(e.target.value as VehiculoTipo)} fullWidth>
-              <MenuItem value="CAMION">Camión</MenuItem>
-              <MenuItem value="AUTO">Auto</MenuItem>
-            </TextField>
-
             <TextField
               select
-              label="Subtipo"
-              value={subtipo}
+              label="Vehículo"
+              value={vehiculoId}
               onChange={(e) => {
-                setSubtipo(e.target.value);
+                setVehiculoId(Number(e.target.value));
                 setServicioId('');
               }}
               fullWidth
-              disabled={!subtipos?.length}
+              disabled={!vehiculosDelCliente.length}
+              helperText={clienteSeleccionado && !vehiculosDelCliente.length ? 'Este cliente no tiene vehículos activos' : ' '}
             >
-              {(subtipos ?? []).map((s) => (
-                <MenuItem key={s} value={s}>
-                  {s}
+              {vehiculosDelCliente.map((v) => (
+                <MenuItem key={v.id} value={v.id}>
+                  {v.tipo === 'CAMION' ? '🚛' : '🚗'} {v.subtipo} · {v.patente || 'sin patente'}
                 </MenuItem>
               ))}
             </TextField>
@@ -256,7 +235,7 @@ export default function TurnoFormDialog({ open, onClose, fecha, turno }: Props) 
         </DialogActions>
       </Dialog>
 
-      <ClienteQuickCreateDialog open={quickCreateOpen} onClose={() => setQuickCreateOpen(false)} onCreated={handleClienteCreado} />
+      <ClienteFormDialog open={quickCreateOpen} onClose={() => setQuickCreateOpen(false)} onSaved={handleClienteCreado} />
     </>
   );
 }

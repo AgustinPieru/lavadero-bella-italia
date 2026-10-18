@@ -144,12 +144,12 @@ export default function AgendaPage() {
                             <Chip label={t.linea} size="small" variant="outlined" />
                           </TableCell>
                           <TableCell>
-                            {t.cliente.vehiculo === 'CAMION' ? '🚛' : '🚗'} {t.servicio.subtipo}
+                            {t.vehiculo.tipo === 'CAMION' ? '🚛' : '🚗'} {t.vehiculo.subtipo}
                           </TableCell>
                           <TableCell>
-                            {t.cliente.denominacion}
+                            {t.vehiculo.cliente.denominacion}
                             <Typography variant="caption" display="block" color="text.secondary">
-                              {t.patente}
+                              {t.vehiculo.patente}
                             </Typography>
                           </TableCell>
                           <TableCell>

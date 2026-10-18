@@ -45,16 +45,19 @@ model RefreshToken {
 }
 
 // ──────────────────────────────────────────────
-// Etapa 3a (Agenda): Cliente y Servicio se modelan acá como tablas reales
+// Etapa 3a/3b: Cliente, Vehiculo y Servicio se modelan acá como tablas reales
 // (Turno necesita referenciarlos por FK, no por texto libre como en la demo).
-// Acá solo se exponen las operaciones mínimas que la Agenda necesita (listar
-// y, en el caso de Cliente, alta rápida desde el modal de turno); el ABM
-// completo con sus pantallas dedicadas llega en las Etapas 3b y 3c.
+//
+// Cliente = datos de contacto (una denominación, un teléfono/email/CUIT).
+// Vehiculo = uno de los vehículos de ese cliente (tipo/subtipo/marca/patente).
+// Un cliente puede tener N vehículos (ej. una empresa con varios camiones) —
+// por eso van separados y no mezclados en una sola tabla como en la demo,
+// donde cada vehículo era directamente un "cliente" repetido.
 //
 // Empresa (cuenta corriente, facturación consolidada, tarifas diferenciales)
-// todavía NO se modela: en la demo un camión de empresa es simplemente un
-// Cliente más, correlacionado por nombre — eso se revisa recién en la
-// Etapa 3e, cuando sepamos exactamente qué necesita Empresas/Facturación.
+// todavía NO se modela aparte: hoy una empresa simplemente ES un Cliente con
+// varios Vehiculo. Se revisa en la Etapa 3e si necesita algo más (tarifas,
+// cuenta corriente) que no sea ya cubierto por tener un Cliente propio.
 // ──────────────────────────────────────────────
 
 enum VehiculoTipo {
@@ -63,22 +66,36 @@ enum VehiculoTipo {
 }
 
 model Cliente {
-  id           Int          @id @default(autoincrement())
+  id           Int        @id @default(autoincrement())
   denominacion String
   telefono     String
   cuit         String?
   email        String?
   direccion    String?
-  vehiculo     VehiculoTipo
-  subtipo      String
-  marca        String?
-  modelo       String?
-  patente      String?
-  createdAt    DateTime     @default(now()) @map("created_at")
-  updatedAt    DateTime     @updatedAt @map("updated_at")
-  turnos       Turno[]
+  activo       Boolean    @default(true) // "baja" = desactivar, no borrar (preserva el historial de turnos)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  vehiculos    Vehiculo[]
 
   @@map("clientes")
+}
+
+model Vehiculo {
+  id        Int          @id @default(autoincrement())
+  clienteId Int          @map("cliente_id")
+  tipo      VehiculoTipo
+  subtipo   String
+  marca     String?
+  modelo    String?
+  patente   String?
+  activo    Boolean      @default(true)
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  turnos  Turno[]
+
+  @@map("vehiculos")
 }
 
 model Servicio {
@@ -119,9 +136,8 @@ model Turno {
   fecha      DateTime    @db.Date // día del turno — reemplaza las claves TURNOS_POR_DIA de la demo
   hora       String // 'HH:MM' — la grilla de horarios configurable llega en la Etapa 3d
   linea      Linea       @default(A)
-  clienteId  Int         @map("cliente_id")
+  vehiculoId Int         @map("vehiculo_id")
   servicioId Int         @map("servicio_id")
-  patente    String // se guarda aparte del Cliente: un turno puntual puede ser para otro vehículo
   estado     EstadoTurno @default(RESERVADO)
   formaPago  FormaPago   @map("forma_pago")
   pagado     Boolean     @default(false)
@@ -129,7 +145,7 @@ model Turno {
   createdAt  DateTime    @default(now()) @map("created_at")
   updatedAt  DateTime    @updatedAt @map("updated_at")
 
-  cliente  Cliente  @relation(fields: [clienteId], references: [id])
+  vehiculo Vehiculo @relation(fields: [vehiculoId], references: [id])
   servicio Servicio @relation(fields: [servicioId], references: [id])
 
   @@index([fecha])

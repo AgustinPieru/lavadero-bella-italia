@@ -19,9 +19,8 @@ router.use(authenticate);
 const turnoValidators = [
   body('hora').trim().notEmpty().withMessage('Hora requerida'),
   body('linea').isIn(['A', 'B']).withMessage('Línea inválida'),
-  body('clienteId').isInt().withMessage('Cliente requerido'),
+  body('vehiculoId').isInt().withMessage('Vehículo requerido'),
   body('servicioId').isInt().withMessage('Servicio requerido'),
-  body('patente').trim().notEmpty().withMessage('Patente requerida'),
   body('formaPago').isIn(['CONTADO', 'TRANSFERENCIA', 'EFECTIVO', 'CUENTA_CORRIENTE']).withMessage('Forma de pago inválida'),
 ];
 

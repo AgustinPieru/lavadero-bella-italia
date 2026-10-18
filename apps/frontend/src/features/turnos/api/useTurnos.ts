@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
-import type { Cliente } from '@/features/clientes/api/useClientes';
+import type { Cliente, Vehiculo } from '@/features/clientes/api/useClientes';
 import type { Servicio } from '@/features/servicios/api/useServicios';
 
 export type Linea = 'A' | 'B';
@@ -12,14 +12,13 @@ export interface Turno {
   fecha: string;
   hora: string;
   linea: Linea;
-  clienteId: number;
+  vehiculoId: number;
   servicioId: number;
-  patente: string;
   estado: EstadoTurno;
   formaPago: FormaPago;
   pagado: boolean;
   facturar: boolean;
-  cliente: Cliente;
+  vehiculo: Vehiculo & { cliente: Cliente };
   servicio: Servicio;
 }
 
@@ -27,9 +26,8 @@ export interface TurnoInput {
   fecha: string;
   hora: string;
   linea: Linea;
-  clienteId: number;
+  vehiculoId: number;
   servicioId: number;
-  patente: string;
   formaPago: FormaPago;
   pagado: boolean;
   facturar: boolean;

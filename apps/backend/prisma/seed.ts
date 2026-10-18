@@ -27,7 +27,8 @@ async function seedAdmin() {
 
 // Mismos datos que veníamos usando en la demo (demo.html), para no arrancar
 // de cero: los mismos servicios con sus subtipos y precios, y un par de
-// clientes de ejemplo (uno por vehículo).
+// clientes de ejemplo. Transporte Cordillera queda con DOS vehículos, para
+// dejar probado desde el seed que un cliente puede tener más de uno.
 async function seedServiciosYClientes() {
   const serviciosExistentes = await prisma.servicio.count();
   if (serviciosExistentes > 0) {
@@ -55,16 +56,41 @@ async function seedServiciosYClientes() {
     ],
   });
 
-  await prisma.cliente.createMany({
-    data: [
-      { denominacion: 'Marcelo Ibáñez', telefono: '11 5555-1234', cuit: '20-28773311-4', email: 'marcelo.ibanez@gmail.com', direccion: 'Av. Rivadavia 4820, CABA', vehiculo: 'AUTO', subtipo: 'Pickup', marca: 'Volkswagen', modelo: 'Amarok', patente: 'OT 442 GH' },
-      { denominacion: 'Julieta Márquez', telefono: '11 4444-7788', cuit: '27-30112233-5', email: 'julieta.marquez@hotmail.com', direccion: 'Calle 50 N°1230, La Plata', vehiculo: 'AUTO', subtipo: 'Auto', marca: 'Ford', modelo: 'Fiesta', patente: 'PQ 205 XA' },
-      { denominacion: 'Transporte Cordillera SRL', telefono: '11 4321-0098', cuit: '30-71234567-8', email: 'administracion@cordillera.com.ar', direccion: 'Parque Industrial, Lote 12, San Justo', vehiculo: 'CAMION', subtipo: 'Semirremolque', marca: 'Scania', modelo: 'R450', patente: 'AF 204 KL' },
-      { denominacion: 'Fletes Bianchi', telefono: '11 2233-4455', cuit: '20-34567891-3', email: 'bianchi.fletes@gmail.com', direccion: 'Ruta 9 km 45, San Justo', vehiculo: 'CAMION', subtipo: 'Chasis', marca: 'Iveco', modelo: 'Tector', patente: 'AB 733 PL' },
-    ],
+  const marcelo = await prisma.cliente.create({
+    data: {
+      denominacion: 'Marcelo Ibáñez', telefono: '11 5555-1234', cuit: '20-28773311-4',
+      email: 'marcelo.ibanez@gmail.com', direccion: 'Av. Rivadavia 4820, CABA',
+      vehiculos: { create: [{ tipo: 'AUTO', subtipo: 'Pickup', marca: 'Volkswagen', modelo: 'Amarok', patente: 'OT 442 GH' }] },
+    },
+  });
+  const julieta = await prisma.cliente.create({
+    data: {
+      denominacion: 'Julieta Márquez', telefono: '11 4444-7788', cuit: '27-30112233-5',
+      email: 'julieta.marquez@hotmail.com', direccion: 'Calle 50 N°1230, La Plata',
+      vehiculos: { create: [{ tipo: 'AUTO', subtipo: 'Auto', marca: 'Ford', modelo: 'Fiesta', patente: 'PQ 205 XA' }] },
+    },
+  });
+  const cordillera = await prisma.cliente.create({
+    data: {
+      denominacion: 'Transporte Cordillera SRL', telefono: '11 4321-0098', cuit: '30-71234567-8',
+      email: 'administracion@cordillera.com.ar', direccion: 'Parque Industrial, Lote 12, San Justo',
+      vehiculos: {
+        create: [
+          { tipo: 'CAMION', subtipo: 'Semirremolque', marca: 'Scania', modelo: 'R450', patente: 'AF 204 KL' },
+          { tipo: 'CAMION', subtipo: 'Balancín', marca: 'Mercedes-Benz', modelo: 'Atego', patente: 'AD 560 MN' },
+        ],
+      },
+    },
+  });
+  const bianchi = await prisma.cliente.create({
+    data: {
+      denominacion: 'Fletes Bianchi', telefono: '11 2233-4455', cuit: '20-34567891-3',
+      email: 'bianchi.fletes@gmail.com', direccion: 'Ruta 9 km 45, San Justo',
+      vehiculos: { create: [{ tipo: 'CAMION', subtipo: 'Chasis', marca: 'Iveco', modelo: 'Tector', patente: 'AB 733 PL' }] },
+    },
   });
 
-  console.log('Servicios y clientes de ejemplo cargados.');
+  console.log(`Servicios y clientes de ejemplo cargados (${[marcelo, julieta, cordillera, bianchi].length} clientes).`);
 }
 
 async function main() {

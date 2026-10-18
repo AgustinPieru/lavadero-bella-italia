@@ -1,7 +1,7 @@
 import prisma from '../../lib/prisma';
 import { Linea, FormaPago } from '@prisma/client';
 
-const TURNO_INCLUDE = { cliente: true, servicio: true } as const;
+const TURNO_INCLUDE = { vehiculo: { include: { cliente: true } }, servicio: true } as const;
 
 function parseFecha(fecha: string): Date {
   // 'fecha' llega como 'YYYY-MM-DD' (sin hora) — se guarda como @db.Date.
@@ -20,9 +20,8 @@ export interface CreateTurnoInput {
   fecha: string;
   hora: string;
   linea: Linea;
-  clienteId: number;
+  vehiculoId: number;
   servicioId: number;
-  patente: string;
   formaPago: FormaPago;
   pagado?: boolean;
   facturar?: boolean;
@@ -34,9 +33,8 @@ export async function createTurno(data: CreateTurnoInput) {
       fecha: parseFecha(data.fecha),
       hora: data.hora,
       linea: data.linea,
-      clienteId: data.clienteId,
+      vehiculoId: data.vehiculoId,
       servicioId: data.servicioId,
-      patente: data.patente,
       formaPago: data.formaPago,
       pagado: data.pagado ?? false,
       facturar: data.facturar ?? true,
@@ -48,9 +46,8 @@ export async function createTurno(data: CreateTurnoInput) {
 export interface UpdateTurnoInput {
   hora: string;
   linea: Linea;
-  clienteId: number;
+  vehiculoId: number;
   servicioId: number;
-  patente: string;
   formaPago: FormaPago;
   pagado: boolean;
   facturar: boolean;

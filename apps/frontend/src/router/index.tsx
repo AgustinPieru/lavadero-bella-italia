@@ -8,6 +8,7 @@ import { ROUTES } from './routes';
 
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
 const AgendaPage = lazy(() => import('@/features/turnos/pages/AgendaPage'));
+const ClientesListPage = lazy(() => import('@/features/clientes/pages/ClientesListPage'));
 
 function Loading() {
   return (
@@ -33,6 +34,7 @@ export default function AppRouter() {
           }
         >
           <Route path={ROUTES.DASHBOARD} element={<AgendaPage />} />
+          <Route path={ROUTES.CLIENTES} element={<ClientesListPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />

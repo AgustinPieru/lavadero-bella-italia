@@ -22,6 +22,7 @@ import {
 import {
   Menu as MenuIcon,
   Assignment as AgendaIcon,
+  People as PeopleIcon,
   ChevronLeft as ChevronLeftIcon,
   Logout as LogoutIcon,
   AccountCircle as AccountCircleIcon,
@@ -36,9 +37,11 @@ const DRAWER_WIDTH = 240;
 const ACCENT_SOFT = '#e2f3ea';
 
 // Se va completando a medida que avanzamos por las etapas del roadmap
-// (Agenda, Clientes, Servicios, Horarios, Empresas, Facturación, Gastos,
-// Reseñas, Reportes).
-const navItems = [{ label: 'Agenda', icon: <AgendaIcon />, path: ROUTES.DASHBOARD }];
+// (Servicios, Horarios, Empresas, Facturación, Gastos, Reseñas, Reportes).
+const navItems = [
+  { label: 'Agenda', icon: <AgendaIcon />, path: ROUTES.DASHBOARD },
+  { label: 'Clientes', icon: <PeopleIcon />, path: ROUTES.CLIENTES },
+];
 
 export default function DashboardLayout() {
   const { user, logout } = useAuth();
