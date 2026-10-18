@@ -1,6 +1,5 @@
-// Grilla de horarios para el selector manual de turno. Fija por ahora
-// (06:00 a 21:00, cada 1:15 — igual que la demo); se vuelve configurable
-// por día de la semana cuando construyamos Horarios y Cupos (Etapa 3d).
+// Grilla de turnos (cada 1:15, igual que la demo) para el selector manual de
+// hora en Agenda y para los cupos de Horarios y Cupos (Etapa 3d).
 function timeToMinutes(t: string): number {
   const [h, m] = t.split(':').map(Number);
   return h * 60 + m;
@@ -23,3 +22,19 @@ export function generateSlots(desde: string, hasta: string): string[] {
 }
 
 export const HORAS_AGENDA = generateSlots('06:00', '21:00');
+
+// Grilla fina (cada 30') SOLO para los selectores "Desde/Hasta" de apertura
+// en Horarios y Cupos — ahí conviene precisión de media hora para definir el
+// horario de atención con exactitud (distinto de la grilla de turnos de arriba).
+export function generateTimeOptions(desde: string, hasta: string, stepMin = 30): string[] {
+  const out: string[] = [];
+  let t = timeToMinutes(desde);
+  const end = timeToMinutes(hasta);
+  while (t <= end) {
+    out.push(minutesToTime(t));
+    t += stepMin;
+  }
+  return out;
+}
+
+export const TIME_OPTIONS = generateTimeOptions('06:00', '22:30');

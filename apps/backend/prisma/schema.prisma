@@ -151,3 +151,36 @@ model Turno {
   @@index([fecha])
   @@map("turnos")
 }
+
+// ──────────────────────────────────────────────
+// Etapa 3d: Horarios y Cupos. Siempre hay exactamente 7 filas (una por día
+// de la semana, 0=domingo..6=sábado, igual que Date.getDay()) — no es un
+// recurso que se cree/borre, solo se lee y edita. Los cupos por franja
+// horaria (qué modo tiene cada 08:00, 09:15, etc.) van en un JSON porque
+// siempre se leen y graban como bloque completo del día, nunca slot por
+// slot — el turnero público (Etapa 4) va a leer este bloque entero para
+// calcular la disponibilidad real.
+// ──────────────────────────────────────────────
+
+enum ModoSlot {
+  CAMION
+  AUTO
+  LIBRE
+  CERRADO
+}
+
+model HorarioDia {
+  id               Int      @id @default(autoincrement())
+  diaSemana        Int      @unique @map("dia_semana") // 0=domingo..6=sábado
+  abierto          Boolean  @default(true)
+  desde            String // 'HH:MM'
+  hasta            String // 'HH:MM'
+  modos            Json // { "08:00": "CAMION", "09:15": "LIBRE", ... }
+  lineaBHabilitada Boolean  @default(false) @map("linea_b_habilitada")
+  lineaBDesde      String?  @map("linea_b_desde")
+  lineaBHasta      String?  @map("linea_b_hasta")
+  modosLineaB      Json?    @map("modos_linea_b")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("horarios_dia")
+}

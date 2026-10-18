@@ -10,6 +10,7 @@ const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
 const AgendaPage = lazy(() => import('@/features/turnos/pages/AgendaPage'));
 const ClientesListPage = lazy(() => import('@/features/clientes/pages/ClientesListPage'));
 const ServiciosListPage = lazy(() => import('@/features/servicios/pages/ServiciosListPage'));
+const HorariosPage = lazy(() => import('@/features/horarios/pages/HorariosPage'));
 
 function Loading() {
   return (
@@ -37,6 +38,7 @@ export default function AppRouter() {
           <Route path={ROUTES.DASHBOARD} element={<AgendaPage />} />
           <Route path={ROUTES.CLIENTES} element={<ClientesListPage />} />
           <Route path={ROUTES.SERVICIOS} element={<ServiciosListPage />} />
+          <Route path={ROUTES.HORARIOS} element={<HorariosPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />

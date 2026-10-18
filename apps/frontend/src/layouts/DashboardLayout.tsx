@@ -24,6 +24,7 @@ import {
   Assignment as AgendaIcon,
   People as PeopleIcon,
   LocalCarWash as ServiciosIcon,
+  Schedule as HorariosIcon,
   ChevronLeft as ChevronLeftIcon,
   Logout as LogoutIcon,
   AccountCircle as AccountCircleIcon,
@@ -38,11 +39,12 @@ const DRAWER_WIDTH = 240;
 const ACCENT_SOFT = '#e2f3ea';
 
 // Se va completando a medida que avanzamos por las etapas del roadmap
-// (Horarios, Empresas, Facturación, Gastos, Reseñas, Reportes).
+// (Empresas, Facturación, Gastos, Reseñas, Reportes).
 const navItems = [
   { label: 'Agenda', icon: <AgendaIcon />, path: ROUTES.DASHBOARD },
   { label: 'Clientes', icon: <PeopleIcon />, path: ROUTES.CLIENTES },
   { label: 'Servicios', icon: <ServiciosIcon />, path: ROUTES.SERVICIOS },
+  { label: 'Horarios', icon: <HorariosIcon />, path: ROUTES.HORARIOS },
 ];
 
 export default function DashboardLayout() {

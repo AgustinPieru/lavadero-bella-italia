@@ -12,6 +12,7 @@ import authRoutes from './modules/auth/auth.routes';
 import clientesRoutes from './modules/clientes/clientes.routes';
 import serviciosRoutes from './modules/servicios/servicios.routes';
 import turnosRoutes from './modules/turnos/turnos.routes';
+import horariosRoutes from './modules/horarios/horarios.routes';
 
 const app = express();
 
@@ -54,6 +55,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/clientes', clientesRoutes);
 app.use('/api/v1/servicios', serviciosRoutes);
 app.use('/api/v1/turnos', turnosRoutes);
+app.use('/api/v1/horarios', horariosRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
