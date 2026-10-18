@@ -9,6 +9,9 @@ import { env } from './config/env';
 import prisma from './lib/prisma';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import authRoutes from './modules/auth/auth.routes';
+import clientesRoutes from './modules/clientes/clientes.routes';
+import serviciosRoutes from './modules/servicios/servicios.routes';
+import turnosRoutes from './modules/turnos/turnos.routes';
 
 const app = express();
 
@@ -48,6 +51,9 @@ app.get('/api/health/db', async (_req, res) => {
 
 // Rutas de módulos se van agregando acá a medida que avanzamos de etapa.
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/clientes', clientesRoutes);
+app.use('/api/v1/servicios', serviciosRoutes);
+app.use('/api/v1/turnos', turnosRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

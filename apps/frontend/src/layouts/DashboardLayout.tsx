@@ -21,7 +21,7 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon,
-  Dashboard as DashboardIcon,
+  Assignment as AgendaIcon,
   ChevronLeft as ChevronLeftIcon,
   Logout as LogoutIcon,
   AccountCircle as AccountCircleIcon,
@@ -38,7 +38,7 @@ const ACCENT_SOFT = '#e2f3ea';
 // Se va completando a medida que avanzamos por las etapas del roadmap
 // (Agenda, Clientes, Servicios, Horarios, Empresas, Facturación, Gastos,
 // Reseñas, Reportes).
-const navItems = [{ label: 'Inicio', icon: <DashboardIcon />, path: ROUTES.DASHBOARD }];
+const navItems = [{ label: 'Agenda', icon: <AgendaIcon />, path: ROUTES.DASHBOARD }];
 
 export default function DashboardLayout() {
   const { user, logout } = useAuth();

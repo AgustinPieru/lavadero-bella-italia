@@ -7,7 +7,7 @@ import AuthLayout from '@/layouts/AuthLayout';
 import { ROUTES } from './routes';
 
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
-const DashboardPage = lazy(() => import('@/features/dashboard/pages/DashboardPage'));
+const AgendaPage = lazy(() => import('@/features/turnos/pages/AgendaPage'));
 
 function Loading() {
   return (
@@ -32,7 +32,7 @@ export default function AppRouter() {
             </ProtectedRoute>
           }
         >
-          <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
+          <Route path={ROUTES.DASHBOARD} element={<AgendaPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />

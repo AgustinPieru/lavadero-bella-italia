@@ -43,3 +43,95 @@ model RefreshToken {
 
   @@map("refresh_tokens")
 }
+
+// ──────────────────────────────────────────────
+// Etapa 3a (Agenda): Cliente y Servicio se modelan acá como tablas reales
+// (Turno necesita referenciarlos por FK, no por texto libre como en la demo).
+// Acá solo se exponen las operaciones mínimas que la Agenda necesita (listar
+// y, en el caso de Cliente, alta rápida desde el modal de turno); el ABM
+// completo con sus pantallas dedicadas llega en las Etapas 3b y 3c.
+//
+// Empresa (cuenta corriente, facturación consolidada, tarifas diferenciales)
+// todavía NO se modela: en la demo un camión de empresa es simplemente un
+// Cliente más, correlacionado por nombre — eso se revisa recién en la
+// Etapa 3e, cuando sepamos exactamente qué necesita Empresas/Facturación.
+// ──────────────────────────────────────────────
+
+enum VehiculoTipo {
+  CAMION
+  AUTO
+}
+
+model Cliente {
+  id           Int          @id @default(autoincrement())
+  denominacion String
+  telefono     String
+  cuit         String?
+  email        String?
+  direccion    String?
+  vehiculo     VehiculoTipo
+  subtipo      String
+  marca        String?
+  modelo       String?
+  patente      String?
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  turnos       Turno[]
+
+  @@map("clientes")
+}
+
+model Servicio {
+  id          Int          @id @default(autoincrement())
+  nombre      String
+  descripcion String?
+  vehiculo    VehiculoTipo
+  subtipo     String
+  precio      Int // neto, sin IVA — pesos enteros (sin centavos), igual que en la demo
+  activo      Boolean      @default(true)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  turnos      Turno[]
+
+  @@map("servicios")
+}
+
+enum Linea {
+  A
+  B
+}
+
+enum EstadoTurno {
+  RESERVADO
+  COMPLETADO
+  CANCELADO
+}
+
+enum FormaPago {
+  CONTADO
+  TRANSFERENCIA
+  EFECTIVO
+  CUENTA_CORRIENTE
+}
+
+model Turno {
+  id         Int         @id @default(autoincrement())
+  fecha      DateTime    @db.Date // día del turno — reemplaza las claves TURNOS_POR_DIA de la demo
+  hora       String // 'HH:MM' — la grilla de horarios configurable llega en la Etapa 3d
+  linea      Linea       @default(A)
+  clienteId  Int         @map("cliente_id")
+  servicioId Int         @map("servicio_id")
+  patente    String // se guarda aparte del Cliente: un turno puntual puede ser para otro vehículo
+  estado     EstadoTurno @default(RESERVADO)
+  formaPago  FormaPago   @map("forma_pago")
+  pagado     Boolean     @default(false)
+  facturar   Boolean     @default(true) // false = se cobra pero no se emite comprobante (ver Etapa 3f)
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+
+  cliente  Cliente  @relation(fields: [clienteId], references: [id])
+  servicio Servicio @relation(fields: [servicioId], references: [id])
+
+  @@index([fecha])
+  @@map("turnos")
+}
