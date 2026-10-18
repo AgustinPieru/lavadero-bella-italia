@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Etapa 1 (scaffolding): Prisma no genera el cliente sin al menos un modelo,
+// así que User/RefreshToken arrancan acá — es el modelo de datos mínimo e
+// inevitable para validar que Prisma + Postgres funcionan de punta a punta.
+// La lógica de login (endpoints, JWT, etc.) se construye recién en la Etapa 2.
+// El resto de los modelos (Cliente, Turno, Servicio, Empresa, Factura...)
+// se agregan a medida que avanzamos por las etapas siguientes.
+
+enum Role {
+  ADMIN
+  OPERATOR
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  email         String         @unique
+  password      String
+  name          String
+  role          Role           @default(ADMIN)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int      @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
