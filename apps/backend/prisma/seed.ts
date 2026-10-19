@@ -74,6 +74,7 @@ async function seedServiciosYClientes() {
     data: {
       denominacion: 'Transporte Cordillera SRL', telefono: '11 4321-0098', cuit: '30-71234567-8',
       email: 'administracion@cordillera.com.ar', direccion: 'Parque Industrial, Lote 12, San Justo',
+      esEmpresa: true, descuentoPct: 18, facturacion: 'ARCA', cuentaCorrienteHabilitada: true,
       vehiculos: {
         create: [
           { tipo: 'CAMION', subtipo: 'Semirremolque', marca: 'Scania', modelo: 'R450', patente: 'AF 204 KL' },
@@ -86,6 +87,7 @@ async function seedServiciosYClientes() {
     data: {
       denominacion: 'Fletes Bianchi', telefono: '11 2233-4455', cuit: '20-34567891-3',
       email: 'bianchi.fletes@gmail.com', direccion: 'Ruta 9 km 45, San Justo',
+      esEmpresa: true, descuentoPct: 5, facturacion: 'INTERNA', cuentaCorrienteHabilitada: false,
       vehiculos: { create: [{ tipo: 'CAMION', subtipo: 'Chasis', marca: 'Iveco', modelo: 'Tector', patente: 'AB 733 PL' }] },
     },
   });

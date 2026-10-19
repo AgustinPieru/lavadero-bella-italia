@@ -44,3 +44,6 @@ apps/backend/.wwebjs_auth/
 
 # TypeScript
 *.tsbuildinfo
+
+# Certificado digital de ARCA (CUIT del lavadero) — nunca debe vivir en git
+apps/backend/certs/

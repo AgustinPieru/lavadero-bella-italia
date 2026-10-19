@@ -132,6 +132,10 @@ export default function TurnoFormDialog({ open, onClose, fecha, turno }: Props) 
 
   const saving = createTurno.isPending || updateTurno.isPending;
   const servicioSeleccionado = servicios?.find((s) => s.id === servicioId);
+  const descuentoPct = clienteSeleccionado?.esEmpresa ? clienteSeleccionado.descuentoPct ?? 0 : 0;
+  const precioConDescuento = servicioSeleccionado
+    ? Math.round(servicioSeleccionado.precio * (1 - descuentoPct / 100))
+    : 0;
 
   return (
     <>
@@ -189,6 +193,12 @@ export default function TurnoFormDialog({ open, onClose, fecha, turno }: Props) 
             {servicioSeleccionado && (
               <Typography variant="caption" color="text.secondary" mt={-1.5}>
                 Precio neto, sin IVA.
+                {descuentoPct > 0 && (
+                  <>
+                    {' '}
+                    Con el {descuentoPct}% de descuento de empresa: <strong>{formatPesos(precioConDescuento)}</strong>.
+                  </>
+                )}
               </Typography>
             )}
 

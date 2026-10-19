@@ -14,6 +14,8 @@ export interface Vehiculo {
   activo: boolean;
 }
 
+export type TipoFacturacion = 'ARCA' | 'INTERNA';
+
 export interface Cliente {
   id: number;
   denominacion: string;
@@ -23,6 +25,11 @@ export interface Cliente {
   direccion: string | null;
   activo: boolean;
   vehiculos: Vehiculo[];
+  // Etapa 3e: una empresa es un cliente con estos campos cargados.
+  esEmpresa: boolean;
+  descuentoPct: number | null;
+  facturacion: TipoFacturacion | null;
+  cuentaCorrienteHabilitada: boolean;
 }
 
 export interface ClienteContactoInput {

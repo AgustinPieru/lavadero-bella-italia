@@ -25,7 +25,7 @@ export default function TurnoStatTiles({ turnos }: { turnos: Turno[] }) {
   const completados = turnos.filter((t) => t.estado === 'COMPLETADO');
   const camiones = noCancelados.filter((t) => t.vehiculo.tipo === 'CAMION').length;
   const autos = noCancelados.filter((t) => t.vehiculo.tipo === 'AUTO').length;
-  const ingresos = completados.reduce((a, t) => a + t.servicio.precio, 0);
+  const ingresos = completados.reduce((a, t) => a + t.precioNeto, 0);
   const lineaB = turnos.filter((t) => t.linea === 'B').length;
 
   return (

@@ -14,10 +14,12 @@ export interface Turno {
   linea: Linea;
   vehiculoId: number;
   servicioId: number;
+  precioNeto: number; // ya con el descuento de empresa aplicado, calculado al crear/editar
   estado: EstadoTurno;
   formaPago: FormaPago;
   pagado: boolean;
   facturar: boolean;
+  facturaId: number | null; // null hasta que el cierre diario lo factura
   vehiculo: Vehiculo & { cliente: Cliente };
   servicio: Servicio;
 }

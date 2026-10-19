@@ -13,8 +13,6 @@ import {
 
 const router = Router();
 
-router.use(authenticate);
-
 const servicioValidators = [
   body('nombre').trim().notEmpty().withMessage('Nombre requerido'),
   body('vehiculo').isIn(['CAMION', 'AUTO']).withMessage('Vehículo inválido'),
@@ -22,12 +20,16 @@ const servicioValidators = [
   body('precio').isInt({ min: 1 }).withMessage('Precio inválido'),
 ];
 
-router.get('/', getServicios);
+// Públicas (sin login): el turnero público (Etapa 4) necesita leer los
+// servicios activos y sus subtipos para armar el paso 1 de la reserva. Con
+// admin=true (uso interno del ABM) sí requiere sesión.
+router.get('/', (req, res, next) => (req.query.admin === 'true' ? authenticate(req, res, next) : next()), getServicios);
 router.get('/subtipos/:vehiculo', getSubtipos);
-router.post('/', servicioValidators, createServicio);
-router.put('/:id', servicioValidators, updateServicio);
-router.patch('/:id/precio', [body('precio').isInt({ min: 1 }).withMessage('Precio inválido')], updatePrecio);
-router.patch('/:id/desactivar', desactivarServicio);
-router.patch('/:id/reactivar', reactivarServicio);
+
+router.post('/', authenticate, servicioValidators, createServicio);
+router.put('/:id', authenticate, servicioValidators, updateServicio);
+router.patch('/:id/precio', authenticate, [body('precio').isInt({ min: 1 }).withMessage('Precio inválido')], updatePrecio);
+router.patch('/:id/desactivar', authenticate, desactivarServicio);
+router.patch('/:id/reactivar', authenticate, reactivarServicio);
 
 export default router;

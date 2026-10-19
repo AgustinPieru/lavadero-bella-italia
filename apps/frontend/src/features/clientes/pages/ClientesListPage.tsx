@@ -200,6 +200,7 @@ export default function ClientesListPage() {
                             </TableCell>
                             <TableCell>
                               {c.denominacion}
+                              {c.esEmpresa && <Chip label="Empresa" size="small" sx={{ ml: 1 }} />}
                               <Typography variant="caption" display="block" color="text.secondary">
                                 {c.direccion || '—'}
                               </Typography>

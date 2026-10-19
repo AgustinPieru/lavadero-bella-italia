@@ -106,3 +106,41 @@ export async function reactivarVehiculo(req: AuthRequest, res: Response): Promis
     res.status(err.status || 500).json({ error: err.message, code: err.code });
   }
 }
+
+export async function getEmpresas(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const empresas = await service.getEmpresas();
+    res.json(empresas);
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+}
+
+export async function marcarComoEmpresa(req: AuthRequest, res: Response): Promise<void> {
+  if (!validate(req, res)) return;
+  try {
+    const cliente = await service.marcarComoEmpresa(parseInt(req.params.id), req.body);
+    res.json(cliente);
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+}
+
+export async function actualizarEmpresa(req: AuthRequest, res: Response): Promise<void> {
+  if (!validate(req, res)) return;
+  try {
+    const cliente = await service.actualizarEmpresa(parseInt(req.params.id), req.body);
+    res.json(cliente);
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+}
+
+export async function quitarEmpresa(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const cliente = await service.quitarEmpresa(parseInt(req.params.id));
+    res.json(cliente);
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+}

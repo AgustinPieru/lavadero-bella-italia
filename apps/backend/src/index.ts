@@ -13,6 +13,12 @@ import clientesRoutes from './modules/clientes/clientes.routes';
 import serviciosRoutes from './modules/servicios/servicios.routes';
 import turnosRoutes from './modules/turnos/turnos.routes';
 import horariosRoutes from './modules/horarios/horarios.routes';
+import facturasRoutes from './modules/facturas/facturas.routes';
+import gastosRoutes from './modules/gastos/gastos.routes';
+import resenasRoutes from './modules/resenas/resenas.routes';
+import reportesRoutes from './modules/reportes/reportes.routes';
+import turneroRoutes from './modules/turnero/turnero.routes';
+import { iniciarWhatsappSiCorresponde } from './lib/whatsapp/client';
 
 const app = express();
 
@@ -56,6 +62,11 @@ app.use('/api/v1/clientes', clientesRoutes);
 app.use('/api/v1/servicios', serviciosRoutes);
 app.use('/api/v1/turnos', turnosRoutes);
 app.use('/api/v1/horarios', horariosRoutes);
+app.use('/api/v1/facturas', facturasRoutes);
+app.use('/api/v1/gastos', gastosRoutes);
+app.use('/api/v1/resenas', resenasRoutes);
+app.use('/api/v1/reportes', reportesRoutes);
+app.use('/api/v1/turnero', turneroRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
@@ -68,6 +79,8 @@ const shutdown = async () => {
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
+
+iniciarWhatsappSiCorresponde();
 
 app.listen(env.PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${env.PORT}`);

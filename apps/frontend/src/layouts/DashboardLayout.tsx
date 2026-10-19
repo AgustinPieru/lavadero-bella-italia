@@ -25,6 +25,11 @@ import {
   People as PeopleIcon,
   LocalCarWash as ServiciosIcon,
   Schedule as HorariosIcon,
+  Business as EmpresasIcon,
+  ReceiptLong as FacturacionIcon,
+  PaidOutlined as GastosIcon,
+  StarOutline as ResenasIcon,
+  BarChart as ReportesIcon,
   ChevronLeft as ChevronLeftIcon,
   Logout as LogoutIcon,
   AccountCircle as AccountCircleIcon,
@@ -38,13 +43,18 @@ const DRAWER_WIDTH = 240;
 // estado activo de la navegación, en vez de los colores por defecto de MUI.
 const ACCENT_SOFT = '#e2f3ea';
 
-// Se va completando a medida que avanzamos por las etapas del roadmap
-// (Empresas, Facturación, Gastos, Reseñas, Reportes).
+// Último módulo del roadmap de admin — el turnero público (Etapa 4) queda
+// fuera de este layout.
 const navItems = [
   { label: 'Agenda', icon: <AgendaIcon />, path: ROUTES.DASHBOARD },
   { label: 'Clientes', icon: <PeopleIcon />, path: ROUTES.CLIENTES },
   { label: 'Servicios', icon: <ServiciosIcon />, path: ROUTES.SERVICIOS },
   { label: 'Horarios', icon: <HorariosIcon />, path: ROUTES.HORARIOS },
+  { label: 'Empresas', icon: <EmpresasIcon />, path: ROUTES.EMPRESAS },
+  { label: 'Facturación', icon: <FacturacionIcon />, path: ROUTES.FACTURACION },
+  { label: 'Gastos', icon: <GastosIcon />, path: ROUTES.GASTOS },
+  { label: 'Reseñas', icon: <ResenasIcon />, path: ROUTES.RESENAS },
+  { label: 'Reportes', icon: <ReportesIcon />, path: ROUTES.REPORTES },
 ];
 
 export default function DashboardLayout() {

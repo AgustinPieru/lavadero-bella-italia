@@ -1,5 +1,5 @@
 import prisma from '../../lib/prisma';
-import { VehiculoTipo } from '@prisma/client';
+import { VehiculoTipo, TipoFacturacion } from '@prisma/client';
 
 export interface VehiculoInput {
   tipo: VehiculoTipo;
@@ -111,4 +111,49 @@ export async function desactivarVehiculo(id: number) {
 export async function reactivarVehiculo(id: number) {
   await findVehiculoOrThrow(id);
   return prisma.vehiculo.update({ where: { id }, data: { activo: true } });
+}
+
+// ──────────────────────────────────────────────
+// Empresas — Etapa 3e. Una empresa ES un Cliente con estos campos de negocio
+// cargados (ver schema.prisma), no una tabla aparte.
+// ──────────────────────────────────────────────
+
+export interface EmpresaDataInput {
+  descuentoPct?: number;
+  facturacion: TipoFacturacion;
+  cuentaCorrienteHabilitada: boolean;
+}
+
+export async function getEmpresas() {
+  return prisma.cliente.findMany({
+    where: { esEmpresa: true },
+    include: CLIENTE_INCLUDE,
+    orderBy: { denominacion: 'asc' },
+  });
+}
+
+export async function marcarComoEmpresa(clienteId: number, data: EmpresaDataInput) {
+  await findOrThrow(clienteId);
+  return prisma.cliente.update({
+    where: { id: clienteId },
+    data: { esEmpresa: true, ...data },
+    include: CLIENTE_INCLUDE,
+  });
+}
+
+export async function actualizarEmpresa(clienteId: number, data: EmpresaDataInput) {
+  const cliente = await findOrThrow(clienteId);
+  if (!cliente.esEmpresa) {
+    throw { status: 400, message: 'Este cliente no está marcado como empresa', code: 'NOT_EMPRESA' };
+  }
+  return prisma.cliente.update({ where: { id: clienteId }, data, include: CLIENTE_INCLUDE });
+}
+
+export async function quitarEmpresa(clienteId: number) {
+  await findOrThrow(clienteId);
+  return prisma.cliente.update({
+    where: { id: clienteId },
+    data: { esEmpresa: false, descuentoPct: null, facturacion: null, cuentaCorrienteHabilitada: false },
+    include: CLIENTE_INCLUDE,
+  });
 }

@@ -65,17 +65,30 @@ enum VehiculoTipo {
   AUTO
 }
 
+enum TipoFacturacion {
+  ARCA
+  INTERNA
+}
+
 model Cliente {
-  id           Int        @id @default(autoincrement())
-  denominacion String
-  telefono     String
-  cuit         String?
-  email        String?
-  direccion    String?
-  activo       Boolean    @default(true) // "baja" = desactivar, no borrar (preserva el historial de turnos)
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
-  vehiculos    Vehiculo[]
+  id                        Int              @id @default(autoincrement())
+  denominacion              String
+  telefono                  String
+  cuit                      String?
+  email                     String?
+  direccion                 String?
+  activo                    Boolean          @default(true) // "baja" = desactivar, no borrar (preserva el historial de turnos)
+  // Etapa 3e (Empresas): una empresa ES un Cliente con estos campos de negocio
+  // cargados — no hay una tabla aparte. esEmpresa controla si se muestra en
+  // la pantalla de Empresas y habilita descuento/facturación/cuenta corriente.
+  esEmpresa                 Boolean          @default(false) @map("es_empresa")
+  descuentoPct              Int?             @map("descuento_pct")
+  facturacion               TipoFacturacion?
+  cuentaCorrienteHabilitada Boolean          @default(false) @map("cuenta_corriente_habilitada")
+  createdAt                 DateTime         @default(now()) @map("created_at")
+  updatedAt                 DateTime         @updatedAt @map("updated_at")
+  vehiculos                 Vehiculo[]
+  facturas                  Factura[]
 
   @@map("clientes")
 }
@@ -132,24 +145,82 @@ enum FormaPago {
 }
 
 model Turno {
-  id         Int         @id @default(autoincrement())
-  fecha      DateTime    @db.Date // día del turno — reemplaza las claves TURNOS_POR_DIA de la demo
-  hora       String // 'HH:MM' — la grilla de horarios configurable llega en la Etapa 3d
-  linea      Linea       @default(A)
-  vehiculoId Int         @map("vehiculo_id")
-  servicioId Int         @map("servicio_id")
-  estado     EstadoTurno @default(RESERVADO)
-  formaPago  FormaPago   @map("forma_pago")
-  pagado     Boolean     @default(false)
-  facturar   Boolean     @default(true) // false = se cobra pero no se emite comprobante (ver Etapa 3f)
-  createdAt  DateTime    @default(now()) @map("created_at")
-  updatedAt  DateTime    @updatedAt @map("updated_at")
+  id          Int         @id @default(autoincrement())
+  fecha       DateTime    @db.Date // día del turno — reemplaza las claves TURNOS_POR_DIA de la demo
+  hora        String // 'HH:MM' — la grilla de horarios configurable llega en la Etapa 3d
+  linea       Linea       @default(A)
+  vehiculoId  Int         @map("vehiculo_id")
+  servicioId  Int         @map("servicio_id")
+  // Precio neto YA con el descuento de empresa aplicado (si corresponde),
+  // calculado y guardado al crear/editar el turno — no se recalcula después,
+  // para que un cambio de precio de lista o de % de descuento no altere
+  // turnos ya cargados (fundamental para la Etapa de Facturación).
+  precioNeto  Int         @map("precio_neto")
+  estado      EstadoTurno @default(RESERVADO)
+  formaPago   FormaPago   @map("forma_pago")
+  pagado      Boolean     @default(false)
+  facturar    Boolean     @default(true) // false = se cobra pero no se emite comprobante (ver Etapa 3f)
+  facturaId   Int?        @map("factura_id") // null hasta el cierre diario que lo factura
+  // Etapa 3h (Reseñas): se genera al completar el turno — identifica el link
+  // público de encuesta que se manda por WhatsApp ("/encuesta/:token"). Null
+  // en turnos que todavía no se completaron.
+  resenaToken String?     @unique @map("resena_token")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
 
   vehiculo Vehiculo @relation(fields: [vehiculoId], references: [id])
   servicio Servicio @relation(fields: [servicioId], references: [id])
+  factura  Factura? @relation(fields: [facturaId], references: [id])
+  resena   Resena?
 
   @@index([fecha])
   @@map("turnos")
+}
+
+// ──────────────────────────────────────────────
+// Etapa 3f: Facturación. Se genera al cerrar el control diario de una fecha:
+// agrupa los turnos COMPLETADOs de ese día con facturar=true por cliente (un
+// cliente con más de un vehículo ese día → UN solo comprobante consolidado,
+// no uno por vehículo) y calcula neto/IVA/total a partir del precioNeto ya
+// guardado en cada turno (con el descuento de empresa ya aplicado).
+//
+// Los campos CAE/caeFchVto/numeroArca quedan null hasta que haya
+// certificado real de ARCA cargado — ver apps/backend/src/lib/arca/.
+// Mientras tanto TODO comprobante funciona como interno (sin timbrado
+// fiscal), aunque `comprobante` diga ARCA para las empresas que así lo
+// tengan configurado (es la condición fiscal del cliente, no si ya se
+// emitió de verdad contra ARCA).
+// ──────────────────────────────────────────────
+
+enum EstadoFactura {
+  PENDIENTE // cuenta corriente, todavía no cobrada
+  PAGADA
+}
+
+model Factura {
+  id          Int             @id @default(autoincrement())
+  numero      String          @unique // correlativo interno, ej. "F-20261018-1"
+  fecha       DateTime        @db.Date
+  clienteId   Int             @map("cliente_id")
+  comprobante TipoFacturacion
+  neto        Int
+  iva         Int
+  total       Int
+  formaPago   FormaPago       @map("forma_pago")
+  estado      EstadoFactura   @default(PAGADA)
+  // Se completan recién si se emite de verdad contra ARCA (ver wsfev1.ts) —
+  // mientras tanto quedan null y el comprobante es puramente interno.
+  cae         String?
+  caeFchVto   DateTime?       @map("cae_fch_vto")
+  puntoVenta  Int?            @map("punto_venta")
+  numeroArca  Int?            @map("numero_arca")
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  cliente Cliente @relation(fields: [clienteId], references: [id])
+  turnos  Turno[]
+
+  @@index([fecha])
+  @@map("facturas")
 }
 
 // ──────────────────────────────────────────────
@@ -183,4 +254,61 @@ model HorarioDia {
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   @@map("horarios_dia")
+}
+
+// ──────────────────────────────────────────────
+// Etapa 3g: Gastos. Sin relación con otras tablas (nadie referencia un
+// Gasto), así que a diferencia de Cliente/Servicio acá "baja" es borrar de
+// verdad — no hace falta un flag `activo`.
+// ──────────────────────────────────────────────
+
+enum CategoriaGasto {
+  SUELDOS
+  IMPUESTOS
+  SERVICIOS
+  INSUMOS
+  OTRO
+}
+
+model Gasto {
+  id          Int            @id @default(autoincrement())
+  fecha       DateTime       @db.Date
+  categoria   CategoriaGasto
+  monto       Int
+  descripcion String?
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  @@index([fecha])
+  @@map("gastos")
+}
+
+// ──────────────────────────────────────────────
+// Etapa 3h: Reseñas. Al completar un turno se genera un link público de
+// encuesta (Turno.resenaToken) y se manda por WhatsApp al cliente — el envío
+// real todavía está gateado (ver apps/backend/src/lib/whatsapp/), igual que
+// ARCA, hasta tener una sesión de whatsapp-web.js activa.
+//
+// El cliente entra al link SIN login, puntúa 1-5 y deja un comentario
+// opcional: eso crea la Resena (estado PENDIENTE). El admin la aprueba u
+// oculta antes de que se vea en el turnero público — solo las APROBADA se
+// muestran ahí.
+// ──────────────────────────────────────────────
+
+enum EstadoResena {
+  PENDIENTE
+  APROBADA
+  OCULTA
+}
+
+model Resena {
+  id         Int          @id @default(autoincrement())
+  turnoId    Int          @unique @map("turno_id")
+  puntaje    Int // 1 a 5
+  comentario String?
+  estado     EstadoResena @default(PENDIENTE)
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  turno Turno @relation(fields: [turnoId], references: [id])
+
+  @@map("resenas")
 }

@@ -23,6 +23,7 @@ import {
   CheckCircle as CheckCircleIcon,
   Replay as ReplayIcon,
   Cancel as CancelIcon,
+  ReceiptLong as ReceiptLongIcon,
 } from '@mui/icons-material';
 import {
   useTurnosDelDia,
@@ -34,6 +35,8 @@ import {
   Turno,
   EstadoTurno,
 } from '../api/useTurnos';
+import ControlDiarioDialog from '@/features/facturas/components/ControlDiarioDialog';
+import FacturaDetailDialog from '@/features/facturas/components/FacturaDetailDialog';
 import TurnoFormDialog from '../components/TurnoFormDialog';
 import TurnoStatTiles from '../components/TurnoStatTiles';
 import { isoDate, formatFechaAgenda, formatPesos } from '@/lib/format';
@@ -67,6 +70,8 @@ export default function AgendaPage() {
   const cancelar = useCancelarTurno(fecha);
   const togglePago = useTogglePago(fecha);
   const toggleFacturar = useToggleFacturar(fecha);
+  const [controlDiarioOpen, setControlDiarioOpen] = useState(false);
+  const [facturaDetailId, setFacturaDetailId] = useState<number | undefined>(undefined);
 
   const openNuevo = () => {
     setEditingTurno(undefined);
@@ -99,9 +104,14 @@ export default function AgendaPage() {
             )}
           </Stack>
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={openNuevo}>
-          Nuevo turno
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" startIcon={<ReceiptLongIcon />} onClick={() => setControlDiarioOpen(true)} disabled={!turnos}>
+            Cerrar control diario
+          </Button>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={openNuevo}>
+            Nuevo turno
+          </Button>
+        </Stack>
       </Stack>
 
       {isLoading || !turnos ? (
@@ -155,7 +165,12 @@ export default function AgendaPage() {
                           <TableCell>
                             {t.servicio.nombre}
                             <Typography variant="caption" display="block" color="text.secondary">
-                              {formatPesos(t.servicio.precio)}
+                              {t.precioNeto !== t.servicio.precio && (
+                                <Box component="span" sx={{ textDecoration: 'line-through', mr: 0.75 }}>
+                                  {formatPesos(t.servicio.precio)}
+                                </Box>
+                              )}
+                              {formatPesos(t.precioNeto)}
                             </Typography>
                           </TableCell>
                           <TableCell>
@@ -211,6 +226,18 @@ export default function AgendaPage() {
       )}
 
       <TurnoFormDialog open={dialogOpen} onClose={() => setDialogOpen(false)} fecha={fecha} turno={editingTurno} />
+
+      {turnos && (
+        <ControlDiarioDialog
+          open={controlDiarioOpen}
+          onClose={() => setControlDiarioOpen(false)}
+          fecha={fecha}
+          fechaDate={fechaDate}
+          turnos={turnos}
+          onVerFactura={(id) => setFacturaDetailId(id)}
+        />
+      )}
+      <FacturaDetailDialog open={!!facturaDetailId} onClose={() => setFacturaDetailId(undefined)} facturaId={facturaDetailId} />
     </Box>
   );
 }
