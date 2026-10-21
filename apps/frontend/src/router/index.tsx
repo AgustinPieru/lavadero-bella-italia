@@ -18,6 +18,7 @@ const ResenasListPage = lazy(() => import('@/features/resenas/pages/ResenasListP
 const EncuestaPage = lazy(() => import('@/features/resenas/pages/EncuestaPage'));
 const ReportesPage = lazy(() => import('@/features/reportes/pages/ReportesPage'));
 const TurneroPage = lazy(() => import('@/features/turnero/pages/TurneroPage'));
+const WhatsappEstadoPage = lazy(() => import('@/features/whatsapp/pages/WhatsappEstadoPage'));
 
 function Loading() {
   return (
@@ -55,6 +56,7 @@ export default function AppRouter() {
           <Route path={ROUTES.GASTOS} element={<GastosPage />} />
           <Route path={ROUTES.RESENAS} element={<ResenasListPage />} />
           <Route path={ROUTES.REPORTES} element={<ReportesPage />} />
+          <Route path={ROUTES.WHATSAPP} element={<WhatsappEstadoPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />

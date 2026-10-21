@@ -18,7 +18,8 @@ import gastosRoutes from './modules/gastos/gastos.routes';
 import resenasRoutes from './modules/resenas/resenas.routes';
 import reportesRoutes from './modules/reportes/reportes.routes';
 import turneroRoutes from './modules/turnero/turnero.routes';
-import { iniciarWhatsappSiCorresponde } from './lib/whatsapp/client';
+import whatsappRoutes from './modules/whatsapp/whatsapp.routes';
+import { iniciarWhatsappSiCorresponde, cerrarWhatsapp } from './lib/whatsapp/client';
 
 const app = express();
 
@@ -67,12 +68,14 @@ app.use('/api/v1/gastos', gastosRoutes);
 app.use('/api/v1/resenas', resenasRoutes);
 app.use('/api/v1/reportes', reportesRoutes);
 app.use('/api/v1/turnero', turneroRoutes);
+app.use('/api/v1/whatsapp', whatsappRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
 
 const shutdown = async () => {
   console.log('Cerrando servidor...');
+  await cerrarWhatsapp();
   await prisma.$disconnect();
   process.exit(0);
 };

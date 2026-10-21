@@ -105,31 +105,44 @@ export async function reservarTurno(input: ReservarTurnoInput) {
     clienteId = empresa.id;
   } else {
     const existente = await prisma.cliente.findFirst({ where: { telefono: input.telefono } });
-    clienteId = existente
-      ? existente.id
-      : (
-          await prisma.cliente.create({
-            data: { denominacion: input.denominacion, telefono: input.telefono, cuit: input.cuit },
-          })
-        ).id;
+    if (existente) {
+      // El teléfono ya identifica a este cliente — se actualizan sus datos
+      // con lo que acaba de tipear (nombre/CUIT pueden haber cambiado desde
+      // la última vez), en vez de dejar pisados los valores viejos.
+      clienteId = (
+        await prisma.cliente.update({
+          where: { id: existente.id },
+          data: { denominacion: input.denominacion, cuit: input.cuit },
+        })
+      ).id;
+    } else {
+      clienteId = (
+        await prisma.cliente.create({
+          data: { denominacion: input.denominacion, telefono: input.telefono, cuit: input.cuit },
+        })
+      ).id;
+    }
   }
 
   const patenteNormalizada = input.patente.trim().toUpperCase();
   const vehiculoExistente = await prisma.vehiculo.findFirst({
     where: { clienteId, patente: patenteNormalizada },
   });
-  const vehiculo =
-    vehiculoExistente ??
-    (await prisma.vehiculo.create({
-      data: {
-        clienteId,
-        tipo: input.vehiculoTipo,
-        subtipo: input.subtipo,
-        marca: input.marca,
-        modelo: input.modelo,
-        patente: patenteNormalizada,
-      },
-    }));
+  const vehiculo = vehiculoExistente
+    ? await prisma.vehiculo.update({
+        where: { id: vehiculoExistente.id },
+        data: { subtipo: input.subtipo, marca: input.marca, modelo: input.modelo },
+      })
+    : await prisma.vehiculo.create({
+        data: {
+          clienteId,
+          tipo: input.vehiculoTipo,
+          subtipo: input.subtipo,
+          marca: input.marca,
+          modelo: input.modelo,
+          patente: patenteNormalizada,
+        },
+      });
 
   const precioNeto = await calcularPrecioNeto(vehiculo.id, servicio.id);
 

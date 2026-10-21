@@ -30,6 +30,7 @@ import {
   PaidOutlined as GastosIcon,
   StarOutline as ResenasIcon,
   BarChart as ReportesIcon,
+  WhatsApp as WhatsappIcon,
   ChevronLeft as ChevronLeftIcon,
   Logout as LogoutIcon,
   AccountCircle as AccountCircleIcon,
@@ -55,6 +56,7 @@ const navItems = [
   { label: 'Gastos', icon: <GastosIcon />, path: ROUTES.GASTOS },
   { label: 'Reseñas', icon: <ResenasIcon />, path: ROUTES.RESENAS },
   { label: 'Reportes', icon: <ReportesIcon />, path: ROUTES.REPORTES },
+  { label: 'WhatsApp', icon: <WhatsappIcon />, path: ROUTES.WHATSAPP },
 ];
 
 export default function DashboardLayout() {

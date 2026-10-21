@@ -13,6 +13,7 @@ export const ROUTES = {
   GASTOS: '/gastos',
   RESENAS: '/resenas',
   REPORTES: '/reportes',
+  WHATSAPP: '/whatsapp',
   // Públicas (sin login).
   TURNERO: '/turnero',
   ENCUESTA: '/encuesta/:token',

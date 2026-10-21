@@ -17,6 +17,13 @@
 
 export const whatsappConfig = {
   enabled: process.env.WHATSAPP_ENABLED === 'true',
+  // Headless por default (uso normal, día a día) — una ventana visible y sin
+  // foco queda sujeta al ahorro de energía de macOS (App Nap), que termina
+  // "congelando" la página y produce errores de "detached Frame" al enviar.
+  // Poner WHATSAPP_HEADLESS=false solo mientras se vincula el número por
+  // primera vez, para ver el QR en una ventana real — y volver a true
+  // (o sacar la variable) apenas quede vinculado.
+  headless: process.env.WHATSAPP_HEADLESS !== 'false',
 };
 
 export function isWhatsappHabilitado(): boolean {
