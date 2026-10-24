@@ -174,7 +174,14 @@ async function seedHorarios() {
 
 async function main() {
   await seedAdmin();
-  await seedServiciosYClientes();
+  // Los clientes/servicios de ejemplo son datos de la demo — no deben
+  // terminar en la base real de producción. El admin y los horarios por
+  // defecto sí hacen falta siempre (son el mínimo para poder operar).
+  if (process.env.NODE_ENV !== 'production') {
+    await seedServiciosYClientes();
+  } else {
+    console.log('NODE_ENV=production: se omiten los clientes/servicios de ejemplo de la demo.');
+  }
   await seedHorarios();
 }
 

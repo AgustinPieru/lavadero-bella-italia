@@ -4,10 +4,18 @@ import * as authService from './auth.service';
 import { AuthRequest } from '../../middleware/auth.middleware';
 
 const REFRESH_COOKIE = 'refresh_token';
+const esProduccion = process.env.NODE_ENV === 'production';
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  secure: esProduccion,
+  // En dev, frontend (5174) y backend (3002) corren en localhost — distinto
+  // puerto pero mismo "site", así que 'strict' igual manda la cookie. En
+  // producción quedan en subdominios de Railway realmente distintos
+  // (frontend-x.up.railway.app vs backend-y.up.railway.app): para eso
+  // 'strict' bloquea la cookie en el refresh (fetch cross-site) y rompe el
+  // login silencioso — hace falta 'none' (que exige 'secure', ya cubierto
+  // por HTTPS en Railway).
+  sameSite: (esProduccion ? 'none' : 'strict') as 'none' | 'strict',
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
