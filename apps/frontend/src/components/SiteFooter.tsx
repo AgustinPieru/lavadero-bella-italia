@@ -124,7 +124,7 @@ export default function SiteFooter() {
             Ubicación
           </Typography>
           <Link
-            href="https://maps.app.goo.gl/gSgfVxWqR6sokEXc7"
+            href="https://www.google.com/maps/place/Lavadero+Bella+Italia/@-31.2720819,-61.4328073,893m/data=!3m2!1e3!4b1!4m6!3m5!1s0x95caaf3a80e7431b:0x6ff3b844527fe984!8m2!3d-31.2720819!4d-61.4302324!16s%2Fg%2F11zbgspb4f"
             target="_blank"
             rel="noopener"
             underline="hover"
@@ -135,7 +135,7 @@ export default function SiteFooter() {
               fontSize="inherit"
               sx={{ verticalAlign: "middle", mr: 0.5 }}
             />
-            Islas Malvinas, Bella Italia, Dpto. Castellanos, Santa Fe
+            Parque Industrial, Bella Italia, Santa Fe
           </Link>
         </Box>
 

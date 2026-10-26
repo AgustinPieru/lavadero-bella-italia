@@ -59,7 +59,7 @@ export default function AppRouter() {
           <Route path={ROUTES.WHATSAPP} element={<WhatsappEstadoPage />} />
         </Route>
 
-        <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+        <Route path="*" element={<Navigate to={ROUTES.TURNERO} replace />} />
       </Routes>
     </Suspense>
   );

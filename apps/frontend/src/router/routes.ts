@@ -1,20 +1,18 @@
-// Las rutas de cada módulo se agregan acá a medida que avanzamos de etapa
-// (Etapa 3g: Gastos, 3h: Reseñas, 3i: Reportes). La Agenda es la pantalla de
-// inicio del admin, igual que en la demo ("Agenda de hoy" era la sección
-// por defecto).
+// El turnero público es la Home del sitio — todo lo administrativo vive
+// bajo /admin (con login propio en /admin/login).
 export const ROUTES = {
-  LOGIN: '/login',
-  DASHBOARD: '/',
-  CLIENTES: '/clientes',
-  SERVICIOS: '/servicios',
-  HORARIOS: '/horarios',
-  EMPRESAS: '/empresas',
-  FACTURACION: '/facturacion',
-  GASTOS: '/gastos',
-  RESENAS: '/resenas',
-  REPORTES: '/reportes',
-  WHATSAPP: '/whatsapp',
+  LOGIN: '/admin/login',
+  DASHBOARD: '/admin',
+  CLIENTES: '/admin/clientes',
+  SERVICIOS: '/admin/servicios',
+  HORARIOS: '/admin/horarios',
+  EMPRESAS: '/admin/empresas',
+  FACTURACION: '/admin/facturacion',
+  GASTOS: '/admin/gastos',
+  RESENAS: '/admin/resenas',
+  REPORTES: '/admin/reportes',
+  WHATSAPP: '/admin/whatsapp',
   // Públicas (sin login).
-  TURNERO: '/turnero',
+  TURNERO: '/',
   ENCUESTA: '/encuesta/:token',
 } as const;

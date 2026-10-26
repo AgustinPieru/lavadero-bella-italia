@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { ROUTES } from '@/router/routes';
 
 export const BASE_URL = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL}/api/v1`
@@ -32,8 +33,8 @@ function redirectToLogin() {
   authFailed = true;
   localStorage.removeItem('access_token');
   localStorage.removeItem('user');
-  if (!window.location.pathname.startsWith('/login')) {
-    window.location.href = '/login';
+  if (!window.location.pathname.startsWith(ROUTES.LOGIN)) {
+    window.location.href = ROUTES.LOGIN;
   }
 }
 
