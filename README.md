@@ -6,6 +6,8 @@ Monorepo (npm workspaces) con backend en Node/Express/TypeScript y frontend en R
 - `apps/frontend` — Panel admin + turnero (React + Vite + MUI)
 - `demo.html` / `index.html` / `propuesta.html` — demo estática y propuesta comercial (no forman parte de esta app; `index.html` sigue siendo lo que sirve GitHub Pages)
 
+Deploy en producción: Railway (backend, frontend y Postgres, un servicio cada uno — ver `apps/backend/Dockerfile` y `apps/frontend/Dockerfile`).
+
 ## Requisitos
 
 - Node.js >= 18
