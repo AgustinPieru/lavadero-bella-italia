@@ -23,7 +23,17 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
     const stored = localStorage.getItem('user');
-    return stored ? JSON.parse(stored) : null;
+    if (!stored) return null;
+    try {
+      return JSON.parse(stored);
+    } catch {
+      // Un valor corrupto acá (de una sesión vieja/rota) no puede tirar
+      // abajo TODA la app al cargar — ni siquiera las páginas públicas
+      // (turnero, encuesta) pasan por acá, pero el AuthProvider envuelve
+      // todo el árbol. Se descarta y se trata como "sin sesión".
+      localStorage.removeItem('user');
+      return null;
+    }
   });
 
   const login = useCallback(async (email: string, password: string) => {
