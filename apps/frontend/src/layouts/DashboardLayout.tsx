@@ -37,6 +37,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '@/features/auth/hooks/useAuthContext';
 import { ROUTES } from '@/router/routes';
+import Logo from '@/components/Logo';
 
 const DRAWER_WIDTH = 240;
 
@@ -142,23 +143,7 @@ export default function DashboardLayout() {
           <IconButton onClick={() => setDrawerOpen(!drawerOpen)} edge="start" sx={{ color: 'text.secondary' }}>
             {drawerOpen && !isMobile ? <ChevronLeftIcon /> : <MenuIcon />}
           </IconButton>
-          <Box
-            sx={{
-              width: 34,
-              height: 34,
-              borderRadius: '50%',
-              bgcolor: 'background.paper',
-              border: '2.5px solid',
-              borderColor: 'primary.dark',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 15,
-              flex: 'none',
-            }}
-          >
-            🚛
-          </Box>
+          <Logo variant="navbar" />
           <Typography variant="h6" noWrap sx={{ flexGrow: 1, fontWeight: 700, fontSize: 18 }}>
             Bella Italia
           </Typography>

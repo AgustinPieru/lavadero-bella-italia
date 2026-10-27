@@ -32,6 +32,7 @@ import {
 } from "../api/useTurnero";
 import { useResenasPublicas } from "@/features/resenas/api/useResenas";
 import SiteFooter from "@/components/SiteFooter";
+import Logo from "@/components/Logo";
 import { isoDate, formatPesos } from "@/lib/format";
 
 const FORMA_PAGO_LABEL: Record<FormaPago, string> = {
@@ -313,23 +314,7 @@ export default function TurneroPage() {
           spacing={1.5}
           sx={{ maxWidth: 640, mx: "auto", px: 2, py: 2 }}
         >
-          <Box
-            sx={{
-              width: 38,
-              height: 38,
-              borderRadius: "50%",
-              bgcolor: "primary.dark",
-              border: "2.5px solid",
-              borderColor: "primary.contrastText",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 17,
-              flexShrink: 0,
-            }}
-          >
-            🚛
-          </Box>
+          <Logo variant="navbar" />
           <Typography variant="h6" fontWeight={800} color="primary.contrastText">
             Lavadero Bella Italia
           </Typography>

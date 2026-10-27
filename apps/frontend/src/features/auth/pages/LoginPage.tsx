@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AxiosError } from 'axios';
+import Logo from '@/components/Logo';
 import {
   Box,
   Card,
@@ -51,22 +52,8 @@ export default function LoginPage() {
     <Card sx={{ width: '100%', maxWidth: 420 }}>
       <CardContent sx={{ p: 4 }}>
         <Box textAlign="center" mb={3}>
-          <Box
-            sx={{
-              width: 48,
-              height: 48,
-              mx: 'auto',
-              mb: 1.5,
-              borderRadius: '50%',
-              border: '2.5px solid',
-              borderColor: 'primary.dark',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 22,
-            }}
-          >
-            🚛
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1.5 }}>
+            <Logo variant="login" />
           </Box>
           <Typography variant="h5" color="primary.dark" fontWeight={800}>
             Bella Italia

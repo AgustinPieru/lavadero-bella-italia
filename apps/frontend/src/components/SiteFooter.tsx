@@ -1,4 +1,5 @@
 import { Box, Typography, Stack, Link, IconButton } from "@mui/material";
+import Logo from "./Logo";
 import {
   Phone as PhoneIcon,
   WhatsApp as WhatsAppIcon,
@@ -38,23 +39,7 @@ export default function SiteFooter() {
           alignItems="center"
           sx={{ flex: "1 1 220px" }}
         >
-          <Box
-            sx={{
-              width: 40,
-              height: 40,
-              borderRadius: "50%",
-              bgcolor: "primary.dark",
-              border: "2.5px solid",
-              borderColor: "primary.contrastText",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 18,
-              flexShrink: 0,
-            }}
-          >
-            🚛
-          </Box>
+          <Logo variant="footer" />
           <Box>
             <Typography fontWeight={800} color="primary.contrastText">
               Bella Italia

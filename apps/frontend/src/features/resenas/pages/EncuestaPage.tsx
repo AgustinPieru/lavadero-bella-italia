@@ -18,6 +18,7 @@ import {
 } from "@mui/icons-material";
 import { useEncuesta, useResponderEncuesta } from "../api/useResenas";
 import SiteFooter from "@/components/SiteFooter";
+import Logo from "@/components/Logo";
 import { formatFechaAgenda } from "@/lib/format";
 
 export default function EncuestaPage() {
@@ -43,23 +44,7 @@ export default function EncuestaPage() {
           spacing={1.5}
           sx={{ maxWidth: 480, mx: "auto", px: 2, py: 2 }}
         >
-          <Box
-            sx={{
-              width: 38,
-              height: 38,
-              borderRadius: "50%",
-              bgcolor: "primary.dark",
-              border: "2.5px solid",
-              borderColor: "primary.contrastText",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 17,
-              flexShrink: 0,
-            }}
-          >
-            🚛
-          </Box>
+          <Logo variant="navbar" />
           <Typography variant="h6" fontWeight={800} color="primary.contrastText">
             Lavadero Bella Italia
           </Typography>
