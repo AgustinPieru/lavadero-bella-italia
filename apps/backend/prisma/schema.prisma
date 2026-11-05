@@ -203,6 +203,13 @@ model Factura {
   fecha       DateTime        @db.Date
   clienteId   Int             @map("cliente_id")
   comprobante TipoFacturacion
+  // Copiado del Turno.facturar que lo originó (ver cerrarDiario en
+  // facturas.service.ts). false = son los lavados que se cobraron pero se
+  // marcaron "no factura" ese día: no es un comprobante real, solo un
+  // registro interno (sin IVA) para poder mandar la orden de trabajo igual
+  // que al resto. El admin lo distingue de un comprobante Interno real
+  // (facturar=true, con IVA, solo falta el timbrado de ARCA) con esto.
+  facturar    Boolean         @default(true)
   neto        Int
   iva         Int
   total       Int

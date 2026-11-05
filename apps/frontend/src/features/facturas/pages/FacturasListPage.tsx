@@ -18,7 +18,7 @@ import {
   Stack,
 } from '@mui/material';
 import { Visibility as VisibilityIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
-import { useFacturas, useMarcarPagada, useSaldoPendiente } from '../api/useFacturas';
+import { useFacturas, useMarcarPagada, useSaldoPendiente, comprobanteLabel, comprobanteColor, agruparFacturasPorClienteYDia } from '../api/useFacturas';
 import { useClientes } from '@/features/clientes/api/useClientes';
 import FacturaDetailDialog from '../components/FacturaDetailDialog';
 import { formatPesos } from '@/lib/format';
@@ -29,6 +29,7 @@ export default function FacturasListPage() {
 
   const { data: clientes } = useClientes({ incluirInactivos: true });
   const { data: facturas, isLoading } = useFacturas(clienteId ? { clienteId } : {});
+  const grupos = facturas ? agruparFacturasPorClienteYDia(facturas) : [];
   const { data: saldo } = useSaldoPendiente(clienteId || undefined);
   const marcarPagada = useMarcarPagada();
 
@@ -94,34 +95,42 @@ export default function FacturasListPage() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {facturas.map((f) => (
-                      <TableRow key={f.id} hover>
-                        <TableCell sx={{ fontFamily: 'monospace' }}>{f.numero}</TableCell>
-                        <TableCell sx={{ fontFamily: 'monospace' }}>{f.fecha.slice(0, 10)}</TableCell>
+                    {grupos.map((g) => (
+                      <TableRow key={`${g.clienteId}-${g.fecha}`} hover>
+                        <TableCell sx={{ fontFamily: 'monospace' }}>{g.facturas.map((f) => f.numero).join(', ')}</TableCell>
+                        <TableCell sx={{ fontFamily: 'monospace' }}>{g.fecha.slice(0, 10)}</TableCell>
                         <TableCell>
-                          {f.cliente.denominacion}
-                          {f.turnos.length > 1 && (
+                          {g.cliente.denominacion}
+                          {g.totalTurnos > 1 && (
                             <Typography variant="caption" display="block" color="text.secondary">
-                              {f.turnos.length} vehículos, consolidado
+                              {g.totalTurnos} lavados, consolidado
                             </Typography>
                           )}
                         </TableCell>
                         <TableCell>
-                          <Chip label={f.comprobante === 'ARCA' ? 'ARCA' : 'Interna'} color={f.comprobante === 'ARCA' ? 'success' : 'default'} size="small" />
-                          {f.cae && <Chip label="CAE" size="small" variant="outlined" sx={{ ml: 0.5 }} />}
+                          {g.facturas.map((f) => (
+                            <Box key={f.id} component="span" sx={{ display: 'inline-flex', mr: 0.5, mb: 0.5 }}>
+                              <Chip label={comprobanteLabel(f)} color={comprobanteColor(f)} size="small" />
+                              {f.cae && <Chip label="CAE" size="small" variant="outlined" sx={{ ml: 0.5 }} />}
+                            </Box>
+                          ))}
                         </TableCell>
                         <TableCell align="right" sx={{ fontFamily: 'monospace' }}>
-                          {formatPesos(f.total)}
+                          {formatPesos(g.total)}
                         </TableCell>
                         <TableCell>
-                          <Chip label={f.estado === 'PAGADA' ? 'Pagada' : 'Pendiente'} color={f.estado === 'PAGADA' ? 'success' : 'warning'} size="small" />
+                          <Chip label={g.estado === 'PAGADA' ? 'Pagada' : 'Pendiente'} color={g.estado === 'PAGADA' ? 'success' : 'warning'} size="small" />
                         </TableCell>
                         <TableCell align="right">
-                          <IconButton size="small" onClick={() => setDetailId(f.id)} title="Ver">
+                          <IconButton size="small" onClick={() => setDetailId(g.anchorId)} title="Ver">
                             <VisibilityIcon fontSize="small" />
                           </IconButton>
-                          {f.estado === 'PENDIENTE' && (
-                            <Button size="small" startIcon={<CheckCircleIcon fontSize="small" />} onClick={() => marcarPagada.mutate(f.id)}>
+                          {g.estado === 'PENDIENTE' && (
+                            <Button
+                              size="small"
+                              startIcon={<CheckCircleIcon fontSize="small" />}
+                              onClick={() => g.facturas.filter((f) => f.estado === 'PENDIENTE').forEach((f) => marcarPagada.mutate(f.id))}
+                            >
                               Cobrar
                             </Button>
                           )}

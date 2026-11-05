@@ -32,11 +32,16 @@ function limpiarSesionAnterior(): void {
 // Tipado mínimo: whatsapp-web.js no se importa en el nivel de módulo para no
 // pagar el costo de cargar puppeteer cuando WHATSAPP_ENABLED=false (el caso
 // por defecto en desarrollo mientras no hay una sesión real).
+// Forma de una instancia de whatsapp-web.js#MessageMedia (ver enviarDocumento)
+// — alcanza con los campos, no hace falta importar la clase real a nivel de
+// tipo para no pagar el costo de cargar puppeteer cuando WHATSAPP_ENABLED=false.
+type WwebMessageMedia = { mimetype: string; data: string; filename?: string };
+
 type WwebClient = {
   initialize: () => Promise<void>;
   destroy: () => Promise<void>;
   logout: () => Promise<void>;
-  sendMessage: (chatId: string, texto: string) => Promise<unknown>;
+  sendMessage: (chatId: string, contenido: string | WwebMessageMedia, opciones?: { caption?: string }) => Promise<unknown>;
   getNumberId: (numero: string) => Promise<{ _serialized: string } | null>;
   on: (evento: string, cb: (...args: unknown[]) => void) => void;
   info?: { wid?: { user?: string }; pushname?: string };
@@ -223,5 +228,25 @@ export async function enviarMensaje(telefono: string, texto: string): Promise<vo
       throw { status: 422, code: 'NUMERO_NO_REGISTRADO', message: `El número ${telefono} no está registrado en WhatsApp.` };
     }
     await client.sendMessage(wid._serialized, texto);
+  });
+}
+
+// Mismo flujo que enviarMensaje, pero adjuntando un archivo (ver
+// facturas.service.ts#enviarOrdenTrabajo) en vez de solo texto.
+export async function enviarDocumento(telefono: string, buffer: Buffer, filename: string, caption?: string): Promise<void> {
+  if (!client || !isWhatsappConfigurado()) {
+    throw { status: 503, code: 'WHATSAPP_NO_CONFIGURADO', message: 'WhatsApp no está configurado todavía.' };
+  }
+  const numero = telefono.replace(/\D/g, '');
+  await conReintentoPorFrameDetached(async () => {
+    if (!client) return;
+    const wid = await client.getNumberId(numero);
+    if (!wid) {
+      throw { status: 422, code: 'NUMERO_NO_REGISTRADO', message: `El número ${telefono} no está registrado en WhatsApp.` };
+    }
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { MessageMedia } = require('whatsapp-web.js');
+    const media: WwebMessageMedia = new MessageMedia('application/pdf', buffer.toString('base64'), filename);
+    await client.sendMessage(wid._serialized, media, caption ? { caption } : undefined);
   });
 }

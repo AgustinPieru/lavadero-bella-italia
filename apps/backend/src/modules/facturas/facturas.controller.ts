@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../../middleware/auth.middleware';
 import * as service from './facturas.service';
+import { generarOrdenTrabajoPdf } from './ordenTrabajo.pdf';
 
 export async function cerrarDiario(req: AuthRequest, res: Response): Promise<void> {
   try {
@@ -34,6 +35,33 @@ export async function getFactura(req: AuthRequest, res: Response): Promise<void>
 export async function marcarPagada(req: AuthRequest, res: Response): Promise<void> {
   try {
     const factura = await service.marcarPagada(parseInt(req.params.id));
+    res.json(factura);
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+}
+
+export async function getOrdenTrabajo(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const orden = await service.getOrdenTrabajoDelDia(parseInt(req.params.id));
+    res.json(orden);
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+}
+
+export async function descargarOrdenTrabajo(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const orden = await service.getOrdenTrabajoDelDia(parseInt(req.params.id));
+    generarOrdenTrabajoPdf(res, orden);
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+}
+
+export async function enviarOrdenTrabajo(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const factura = await service.enviarOrdenTrabajo(parseInt(req.params.id));
     res.json(factura);
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message, code: err.code });

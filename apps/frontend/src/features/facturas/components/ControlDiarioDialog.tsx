@@ -19,7 +19,7 @@ import {
   Divider,
 } from '@mui/material';
 import { Visibility as VisibilityIcon, ReceiptLong as ReceiptLongIcon } from '@mui/icons-material';
-import { useCerrarDiario, useFacturas } from '../api/useFacturas';
+import { useCerrarDiario, useFacturas, comprobanteLabel, comprobanteColor, agruparFacturasPorClienteYDia } from '../api/useFacturas';
 import { Turno, useToggleFacturar } from '@/features/turnos/api/useTurnos';
 import { formatPesos, formatFechaAgenda } from '@/lib/format';
 
@@ -43,6 +43,7 @@ export default function ControlDiarioDialog({ open, onClose, fecha, fechaDate, t
   const cerrarDiario = useCerrarDiario();
   const toggleFacturar = useToggleFacturar(fecha);
   const { data: facturas, isLoading: loadingFacturas } = useFacturas({ fecha });
+  const grupos = facturas ? agruparFacturasPorClienteYDia(facturas) : [];
   const [confirmado, setConfirmado] = useState(false);
 
   const completados = turnos.filter((t) => t.estado === 'COMPLETADO');
@@ -166,28 +167,30 @@ export default function ControlDiarioDialog({ open, onClose, fecha, fechaDate, t
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {facturas.map((f) => (
-                    <TableRow key={f.id}>
-                      <TableCell sx={{ fontFamily: 'monospace' }}>{f.numero}</TableCell>
+                  {grupos.map((g) => (
+                    <TableRow key={`${g.clienteId}-${g.fecha}`}>
+                      <TableCell sx={{ fontFamily: 'monospace' }}>{g.facturas.map((f) => f.numero).join(', ')}</TableCell>
                       <TableCell>
-                        {f.cliente.denominacion}
-                        {f.turnos.length > 1 && (
+                        {g.cliente.denominacion}
+                        {g.totalTurnos > 1 && (
                           <Typography variant="caption" display="block" color="text.secondary">
-                            {f.turnos.length} vehículos, consolidado
+                            {g.totalTurnos} lavados, consolidado
                           </Typography>
                         )}
                       </TableCell>
                       <TableCell>
-                        <Chip label={f.comprobante === 'ARCA' ? 'ARCA' : 'Interna'} color={f.comprobante === 'ARCA' ? 'success' : 'default'} size="small" />
+                        {g.facturas.map((f) => (
+                          <Chip key={f.id} label={comprobanteLabel(f)} color={comprobanteColor(f)} size="small" sx={{ mr: 0.5, mb: 0.5 }} />
+                        ))}
                       </TableCell>
                       <TableCell align="right" sx={{ fontFamily: 'monospace' }}>
-                        {formatPesos(f.total)}
+                        {formatPesos(g.total)}
                       </TableCell>
                       <TableCell>
-                        <Chip label={f.estado === 'PAGADA' ? 'Pagada' : 'Pendiente'} color={f.estado === 'PAGADA' ? 'success' : 'warning'} size="small" />
+                        <Chip label={g.estado === 'PAGADA' ? 'Pagada' : 'Pendiente'} color={g.estado === 'PAGADA' ? 'success' : 'warning'} size="small" />
                       </TableCell>
                       <TableCell align="right">
-                        <IconButton size="small" onClick={() => onVerFactura(f.id)} title="Ver">
+                        <IconButton size="small" onClick={() => onVerFactura(g.anchorId)} title="Ver">
                           <VisibilityIcon fontSize="small" />
                         </IconButton>
                       </TableCell>
