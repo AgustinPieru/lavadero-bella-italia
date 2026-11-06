@@ -56,7 +56,7 @@ export async function enviarConfirmacionTurno(
     '',
     `🧽 ${detalle.servicioNombre}`,
     `📅 ${fechaLegible} a las ${detalle.hora} hs`,
-    `💵 Total neto: $${detalle.precioNeto.toLocaleString('es-AR')}`,
+    `💵 Total neto: $${detalle.precioNeto.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
     '',
     `📍 Cómo llegar: ${UBICACION_MAPS}`,
     '',
