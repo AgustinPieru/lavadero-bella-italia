@@ -1,6 +1,7 @@
 import prisma from '../../lib/prisma';
 import { Linea, FormaPago } from '@prisma/client';
 import { generarResenaToken, enviarEncuestaResena } from '../../lib/whatsapp/notificaciones';
+import { redondear2 } from '../../lib/money';
 
 const TURNO_INCLUDE = { vehiculo: { include: { cliente: true } }, servicio: true } as const;
 
@@ -24,7 +25,7 @@ export async function calcularPrecioNeto(vehiculoId: number, servicioId: number)
 
   const descuentoPct = vehiculo.cliente.esEmpresa ? vehiculo.cliente.descuentoPct ?? 0 : 0;
   if (!descuentoPct) return servicio.precio;
-  return Math.round(servicio.precio * (1 - descuentoPct / 100));
+  return redondear2(servicio.precio * (1 - descuentoPct / 100));
 }
 
 export async function getTurnosDelDia(fecha: string) {

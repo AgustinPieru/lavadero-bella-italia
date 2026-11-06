@@ -10,7 +10,7 @@ router.use(authenticate);
 const gastoValidators = [
   body('fecha').trim().notEmpty().withMessage('Fecha requerida'),
   body('categoria').isIn(['SUELDOS', 'IMPUESTOS', 'SERVICIOS', 'INSUMOS', 'OTRO']).withMessage('Categoría inválida'),
-  body('monto').isInt({ min: 1 }).withMessage('Monto inválido'),
+  body('monto').isFloat({ min: 0.01 }).withMessage('Monto inválido'),
 ];
 
 router.get('/', getGastos);

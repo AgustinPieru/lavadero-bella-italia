@@ -117,7 +117,7 @@ model Servicio {
   descripcion String?
   vehiculo    VehiculoTipo
   subtipo     String
-  precio      Int // neto, sin IVA — pesos enteros (sin centavos), igual que en la demo
+  precio      Float // neto, sin IVA — admite centavos
   activo      Boolean      @default(true)
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
@@ -155,7 +155,7 @@ model Turno {
   // calculado y guardado al crear/editar el turno — no se recalcula después,
   // para que un cambio de precio de lista o de % de descuento no altere
   // turnos ya cargados (fundamental para la Etapa de Facturación).
-  precioNeto  Int         @map("precio_neto")
+  precioNeto  Float       @map("precio_neto")
   estado      EstadoTurno @default(RESERVADO)
   formaPago   FormaPago   @map("forma_pago")
   pagado      Boolean     @default(false)
@@ -210,9 +210,9 @@ model Factura {
   // que al resto. El admin lo distingue de un comprobante Interno real
   // (facturar=true, con IVA, solo falta el timbrado de ARCA) con esto.
   facturar    Boolean         @default(true)
-  neto        Int
-  iva         Int
-  total       Int
+  neto        Float
+  iva         Float
+  total       Float
   formaPago   FormaPago       @map("forma_pago")
   estado      EstadoFactura   @default(PAGADA)
   // Se completan recién si se emite de verdad contra ARCA (ver wsfev1.ts) —
@@ -281,7 +281,7 @@ model Gasto {
   id          Int            @id @default(autoincrement())
   fecha       DateTime       @db.Date
   categoria   CategoriaGasto
-  monto       Int
+  monto       Float
   descripcion String?
   createdAt   DateTime       @default(now()) @map("created_at")
 

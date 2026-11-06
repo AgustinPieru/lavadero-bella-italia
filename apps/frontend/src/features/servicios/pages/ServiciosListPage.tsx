@@ -54,6 +54,7 @@ function PrecioInput({ servicio }: { servicio: Servicio }) {
       onChange={(e) => setValue(e.target.value)}
       onBlur={handleBlur}
       sx={{ width: 120 }}
+      inputProps={{ step: '0.01' }}
       InputProps={{ sx: { fontFamily: 'monospace' } }}
     />
   );

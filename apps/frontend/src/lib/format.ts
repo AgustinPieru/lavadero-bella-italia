@@ -1,5 +1,5 @@
 export function formatPesos(value: number): string {
-  return `$${value.toLocaleString('es-AR')}`;
+  return `$${value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 const DOW_LONG = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];

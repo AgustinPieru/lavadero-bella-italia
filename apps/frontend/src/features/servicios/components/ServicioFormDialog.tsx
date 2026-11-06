@@ -86,7 +86,15 @@ export default function ServicioFormDialog({ open, onClose, servicio }: Props) {
             fullWidth
             placeholder="Ej: Semirremolque, Balancín, Chasis, SUV…"
           />
-          <TextField label="Precio (neto, sin IVA)" type="number" value={form.precio} onChange={set('precio')} required fullWidth />
+          <TextField
+            label="Precio (neto, sin IVA)"
+            type="number"
+            value={form.precio}
+            onChange={set('precio')}
+            required
+            fullWidth
+            inputProps={{ step: '0.01' }}
+          />
           <Typography variant="caption" color="text.secondary" mt={-1}>
             El subtipo se escribe a mano: no hay una lista predefinida, lo que cargues acá es lo que va a aparecer como pestaña en el
             turnero.

@@ -49,7 +49,7 @@ export default function GastosPage() {
   const total = (gastos ?? []).reduce((a, g) => a + g.monto, 0);
 
   const handleAgregar = () => {
-    const montoNum = parseInt(monto, 10);
+    const montoNum = parseFloat(monto);
     if (!montoNum || montoNum <= 0) return;
     createGasto.mutate(
       { fecha, categoria, monto: montoNum, descripcion: descripcion.trim() || undefined },
@@ -110,6 +110,7 @@ export default function GastosPage() {
               onChange={(e) => setMonto(e.target.value)}
               size="small"
               sx={{ maxWidth: 140 }}
+              inputProps={{ step: '0.01' }}
             />
             <TextField
               label="Descripción"
@@ -123,7 +124,7 @@ export default function GastosPage() {
               variant="contained"
               startIcon={<AddIcon />}
               onClick={handleAgregar}
-              disabled={!monto || parseInt(monto, 10) <= 0 || createGasto.isPending}
+              disabled={!monto || parseFloat(monto) <= 0 || createGasto.isPending}
               sx={{ flexShrink: 0 }}
             >
               Agregar

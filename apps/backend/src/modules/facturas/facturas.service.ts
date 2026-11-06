@@ -3,6 +3,7 @@ import * as wsfev1 from '../../lib/arca/wsfev1';
 import { arcaConfig } from '../../lib/arca/config';
 import { enviarDocumento } from '../../lib/whatsapp/client';
 import { generarOrdenTrabajoPdfBuffer } from './ordenTrabajo.pdf';
+import { redondear2 } from '../../lib/money';
 
 const FACTURA_INCLUDE = {
   cliente: true,
@@ -51,9 +52,9 @@ export async function cerrarDiario(fecha: string) {
     const cliente = turnosGrupo[0].vehiculo.cliente;
     const facturar = turnosGrupo[0].facturar;
     const clienteId = cliente.id;
-    const neto = turnosGrupo.reduce((a, t) => a + t.precioNeto, 0);
-    const iva = facturar ? Math.round(neto * IVA_TASA) : 0;
-    const total = neto + iva;
+    const neto = redondear2(turnosGrupo.reduce((a, t) => a + t.precioNeto, 0));
+    const iva = facturar ? redondear2(neto * IVA_TASA) : 0;
+    const total = redondear2(neto + iva);
     const comprobante = facturar && cliente.esEmpresa && cliente.facturacion === 'ARCA' ? 'ARCA' : 'INTERNA';
     const estado = turnosGrupo[0].formaPago === 'CUENTA_CORRIENTE' ? 'PENDIENTE' : 'PAGADA';
     const numero = `F-${fecha.replace(/-/g, '')}-${seq++}`;
@@ -124,9 +125,9 @@ export async function getOrdenTrabajoDelDia(facturaId: number) {
     fecha: factura.fecha,
     cliente: factura.cliente,
     turnos,
-    neto: facturasDelDia.reduce((a, f) => a + f.neto, 0),
-    iva: facturasDelDia.reduce((a, f) => a + f.iva, 0),
-    total: facturasDelDia.reduce((a, f) => a + f.total, 0),
+    neto: redondear2(facturasDelDia.reduce((a, f) => a + f.neto, 0)),
+    iva: redondear2(facturasDelDia.reduce((a, f) => a + f.iva, 0)),
+    total: redondear2(facturasDelDia.reduce((a, f) => a + f.total, 0)),
     facturas: facturasDelDia,
   };
 }
@@ -149,7 +150,7 @@ export async function enviarOrdenTrabajo(id: number) {
 
 export async function saldoPendientePorCliente(clienteId: number) {
   const pendientes = await prisma.factura.findMany({ where: { clienteId, estado: 'PENDIENTE' } });
-  return pendientes.reduce((a, f) => a + f.total, 0);
+  return redondear2(pendientes.reduce((a, f) => a + f.total, 0));
 }
 
 // Pide el CAE real contra ARCA para una factura tipo ARCA. Mientras no haya

@@ -17,7 +17,7 @@ const servicioValidators = [
   body('nombre').trim().notEmpty().withMessage('Nombre requerido'),
   body('vehiculo').isIn(['CAMION', 'AUTO']).withMessage('Vehículo inválido'),
   body('subtipo').trim().notEmpty().withMessage('Subtipo requerido'),
-  body('precio').isInt({ min: 1 }).withMessage('Precio inválido'),
+  body('precio').isFloat({ min: 0.01 }).withMessage('Precio inválido'),
 ];
 
 // Públicas (sin login): el turnero público (Etapa 4) necesita leer los
@@ -28,7 +28,7 @@ router.get('/subtipos/:vehiculo', getSubtipos);
 
 router.post('/', authenticate, servicioValidators, createServicio);
 router.put('/:id', authenticate, servicioValidators, updateServicio);
-router.patch('/:id/precio', authenticate, [body('precio').isInt({ min: 1 }).withMessage('Precio inválido')], updatePrecio);
+router.patch('/:id/precio', authenticate, [body('precio').isFloat({ min: 0.01 }).withMessage('Precio inválido')], updatePrecio);
 router.patch('/:id/desactivar', authenticate, desactivarServicio);
 router.patch('/:id/reactivar', authenticate, reactivarServicio);
 

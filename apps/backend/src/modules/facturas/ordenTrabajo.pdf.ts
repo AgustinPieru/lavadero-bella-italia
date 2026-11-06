@@ -19,7 +19,7 @@ interface OrdenTrabajo {
 }
 
 function pesos(n: number): string {
-  return `$${n.toLocaleString('es-AR')}`;
+  return `$${n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function escribirContenido(doc: PDFKit.PDFDocument, orden: OrdenTrabajo): void {

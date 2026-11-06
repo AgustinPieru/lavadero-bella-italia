@@ -104,6 +104,12 @@ export async function solicitarCae(input: SolicitarCaeInput): Promise<SolicitarC
   const proximoNro = (await ultimoComprobanteAutorizado(input.cbteTipo, ptoVta)) + 1;
   const hoy = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const alicIva = input.ivaAlicuotaId ?? 5; // 5 = 21%
+  // ARCA exige los importes con 2 decimales exactos (ej. "100.00"); un
+  // número JS con centavos puede llegar como "100" o con restos de punto
+  // flotante (ej. "62809.900000000001") si no se formatea así.
+  const impTotal = input.impTotal.toFixed(2);
+  const impNeto = input.impNeto.toFixed(2);
+  const impIVA = input.impIVA.toFixed(2);
 
   const xml = [
     '<ar:FECAESolicitar>',
@@ -117,15 +123,15 @@ export async function solicitarCae(input: SolicitarCaeInput): Promise<SolicitarC
     `<ar:CbteDesde>${proximoNro}</ar:CbteDesde>`,
     `<ar:CbteHasta>${proximoNro}</ar:CbteHasta>`,
     `<ar:CbteFch>${hoy}</ar:CbteFch>`,
-    `<ar:ImpTotal>${input.impTotal}</ar:ImpTotal>`,
+    `<ar:ImpTotal>${impTotal}</ar:ImpTotal>`,
     '<ar:ImpTotConc>0</ar:ImpTotConc>',
-    `<ar:ImpNeto>${input.impNeto}</ar:ImpNeto>`,
+    `<ar:ImpNeto>${impNeto}</ar:ImpNeto>`,
     '<ar:ImpOpEx>0</ar:ImpOpEx>',
     '<ar:ImpTrib>0</ar:ImpTrib>',
-    `<ar:ImpIVA>${input.impIVA}</ar:ImpIVA>`,
+    `<ar:ImpIVA>${impIVA}</ar:ImpIVA>`,
     '<ar:MonId>PES</ar:MonId>',
     '<ar:MonCotiz>1</ar:MonCotiz>',
-    `<ar:Iva><ar:AlicIva><ar:Id>${alicIva}</ar:Id><ar:BaseImp>${input.impNeto}</ar:BaseImp><ar:Importe>${input.impIVA}</ar:Importe></ar:AlicIva></ar:Iva>`,
+    `<ar:Iva><ar:AlicIva><ar:Id>${alicIva}</ar:Id><ar:BaseImp>${impNeto}</ar:BaseImp><ar:Importe>${impIVA}</ar:Importe></ar:AlicIva></ar:Iva>`,
     '</ar:FECAEDetRequest></ar:FeDetReq>',
     '</ar:FeCAEReq>',
     '</ar:FECAESolicitar>',

@@ -1,6 +1,7 @@
 import PDFDocument from 'pdfkit';
 import { Response } from 'express';
 import { computeReporte, RangoInput } from './reportes.service';
+import { redondear2 } from '../../lib/money';
 
 const FORMA_PAGO_LABEL: Record<string, string> = {
   CONTADO: 'Contado',
@@ -17,7 +18,7 @@ const CATEGORIA_LABEL: Record<string, string> = {
 };
 
 function pesos(n: number): string {
-  return `$${n.toLocaleString('es-AR')}`;
+  return `$${n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function tabla(doc: PDFKit.PDFDocument, headers: string[], rows: string[][], colWidths: number[]) {
@@ -53,7 +54,7 @@ function tabla(doc: PDFKit.PDFDocument, headers: string[], rows: string[][], col
 
 export async function generarReportePdf(res: Response, rango: RangoInput): Promise<void> {
   const r = await computeReporte(rango);
-  const ticketProm = r.completadosCount ? Math.round(r.ingresos / r.completadosCount) : 0;
+  const ticketProm = r.completadosCount ? redondear2(r.ingresos / r.completadosCount) : 0;
   const totalVeh = r.camiones + r.autos;
   const pctCamion = totalVeh ? Math.round((r.camiones / totalVeh) * 100) : 0;
   const pctAuto = totalVeh ? 100 - pctCamion : 0;
