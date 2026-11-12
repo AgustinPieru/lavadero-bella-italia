@@ -11,7 +11,7 @@ interface Props {
 }
 
 const emptyContacto = { denominacion: '', telefono: '', cuit: '', email: '', direccion: '' };
-const emptyVehiculo = { tipo: 'CAMION' as VehiculoTipo, subtipo: '', marca: '', modelo: '', patente: '' };
+const emptyVehiculo = { tipo: 'CAMION' as VehiculoTipo, subtipo: '', marca: '', modelo: '' };
 
 // Formulario único de Cliente: en alta pide los datos de contacto + su
 // primer vehículo (un cliente sin vehículos no tiene mucho sentido); en
@@ -67,7 +67,6 @@ export default function ClienteFormDialog({ open, onClose, cliente, onSaved }: P
             ...vehiculo,
             marca: vehiculo.marca || undefined,
             modelo: vehiculo.modelo || undefined,
-            patente: vehiculo.patente || undefined,
           },
         });
     onSaved?.(saved);
@@ -90,7 +89,7 @@ export default function ClienteFormDialog({ open, onClose, cliente, onSaved }: P
             <>
               <Divider />
               <Typography variant="caption" color="text.secondary">
-                Primer vehículo — se le pueden sumar más después desde la lista de clientes.
+                Primer vehículo — se le pueden sumar más después desde la lista de clientes. La patente se carga al momento del turno.
               </Typography>
               <TextField
                 select
@@ -111,7 +110,6 @@ export default function ClienteFormDialog({ open, onClose, cliente, onSaved }: P
               </TextField>
               <TextField label="Marca" value={vehiculo.marca} onChange={setV('marca')} fullWidth />
               <TextField label="Modelo" value={vehiculo.modelo} onChange={setV('modelo')} fullWidth />
-              <TextField label="Patente" value={vehiculo.patente} onChange={setV('patente')} fullWidth />
             </>
           )}
         </Stack>

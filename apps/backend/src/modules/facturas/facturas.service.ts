@@ -4,6 +4,7 @@ import { arcaConfig } from '../../lib/arca/config';
 import { enviarDocumento } from '../../lib/whatsapp/client';
 import { generarOrdenTrabajoPdfBuffer } from './ordenTrabajo.pdf';
 import { redondear2 } from '../../lib/money';
+import * as cuentaCorrienteService from '../cuentaCorriente/cuentaCorriente.service';
 
 const FACTURA_INCLUDE = {
   cliente: true,
@@ -66,6 +67,18 @@ export async function cerrarDiario(fecha: string) {
       where: { id: { in: turnosGrupo.map((t) => t.id) } },
       data: { facturaId: factura.id },
     });
+    // Cuenta corriente: solo las facturas a crédito generan deuda — las que
+    // se cobran el mismo día (CONTADO/EFECTIVO/TRANSFERENCIA) nunca pasan
+    // por el ledger (ver Etapa 3i en schema.prisma).
+    if (turnosGrupo[0].formaPago === 'CUENTA_CORRIENTE') {
+      await cuentaCorrienteService.registrarMovimiento({
+        clienteId,
+        fecha: fechaDate,
+        descripcion: `Factura ${numero}`,
+        debe: total,
+        facturaId: factura.id,
+      });
+    }
     nuevas.push(await prisma.factura.findUniqueOrThrow({ where: { id: factura.id }, include: FACTURA_INCLUDE }));
   }
 
@@ -95,10 +108,24 @@ export async function getFactura(id: number) {
   return findOrThrow(id);
 }
 
-// Cuenta corriente: marca una factura pendiente como cobrada.
+// Cuenta corriente: marca una factura pendiente como cobrada. El chequeo de
+// "ya estaba pendiente" se hace sobre el estado ANTES del update — si se
+// llama dos veces sobre la misma factura (doble click, retry), la segunda
+// vez el update es un no-op pero no vuelve a postear el pago en el ledger.
 export async function marcarPagada(id: number) {
-  await findOrThrow(id);
-  return prisma.factura.update({ where: { id }, data: { estado: 'PAGADA' }, include: FACTURA_INCLUDE });
+  const factura = await findOrThrow(id);
+  const yaEstabaPendiente = factura.estado === 'PENDIENTE';
+  const updated = await prisma.factura.update({ where: { id }, data: { estado: 'PAGADA' }, include: FACTURA_INCLUDE });
+  if (yaEstabaPendiente && factura.formaPago === 'CUENTA_CORRIENTE') {
+    await cuentaCorrienteService.registrarMovimiento({
+      clienteId: factura.clienteId,
+      fecha: new Date(),
+      descripcion: `Pago factura ${factura.numero}`,
+      haber: factura.total,
+      facturaId: factura.id,
+    });
+  }
+  return updated;
 }
 
 // La orden de trabajo es por cliente y día, no por comprobante: un cliente
@@ -148,9 +175,13 @@ export async function enviarOrdenTrabajo(id: number) {
   return factura;
 }
 
+// El saldo de cuenta corriente vive en el ledger (movimientos_cuenta_corriente),
+// no en la suma de Facturas PENDIENTE: ese ledger arranca con la carga
+// histórica (deuda de antes de este sistema, que nunca tiene una Factura
+// real detrás) y de ahí en más se alimenta de cerrarDiario/marcarPagada —
+// así Facturación muestra el saldo real, histórico + actual, en un solo número.
 export async function saldoPendientePorCliente(clienteId: number) {
-  const pendientes = await prisma.factura.findMany({ where: { clienteId, estado: 'PENDIENTE' } });
-  return redondear2(pendientes.reduce((a, f) => a + f.total, 0));
+  return cuentaCorrienteService.getSaldoPorCliente(clienteId);
 }
 
 // Pide el CAE real contra ARCA para una factura tipo ARCA. Mientras no haya

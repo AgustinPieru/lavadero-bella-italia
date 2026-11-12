@@ -16,6 +16,13 @@ export interface Vehiculo {
 
 export type TipoFacturacion = 'ARCA' | 'INTERNA';
 
+export interface PrecioEmpresa {
+  id: number;
+  servicioId: number;
+  precio: number;
+  servicio: { id: number; nombre: string; subtipo: string; vehiculo: VehiculoTipo; precio: number };
+}
+
 export interface Cliente {
   id: number;
   denominacion: string;
@@ -25,9 +32,11 @@ export interface Cliente {
   direccion: string | null;
   activo: boolean;
   vehiculos: Vehiculo[];
-  // Etapa 3e: una empresa es un cliente con estos campos cargados.
+  // Etapa 3e: una empresa es un cliente con estos campos cargados. El precio
+  // diferencial ya no es un % de descuento global, sino precio por precio
+  // (ver preciosEmpresa) para cada servicio puntual.
   esEmpresa: boolean;
-  descuentoPct: number | null;
+  preciosEmpresa: PrecioEmpresa[];
   facturacion: TipoFacturacion | null;
   cuentaCorrienteHabilitada: boolean;
 }

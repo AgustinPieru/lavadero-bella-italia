@@ -74,7 +74,7 @@ async function seedServiciosYClientes() {
     data: {
       denominacion: 'Transporte Cordillera SRL', telefono: '11 4321-0098', cuit: '30-71234567-8',
       email: 'administracion@cordillera.com.ar', direccion: 'Parque Industrial, Lote 12, San Justo',
-      esEmpresa: true, descuentoPct: 18, facturacion: 'ARCA', cuentaCorrienteHabilitada: true,
+      esEmpresa: true, facturacion: 'ARCA', cuentaCorrienteHabilitada: true,
       vehiculos: {
         create: [
           { tipo: 'CAMION', subtipo: 'Semirremolque', marca: 'Scania', modelo: 'R450', patente: 'AF 204 KL' },
@@ -87,9 +87,29 @@ async function seedServiciosYClientes() {
     data: {
       denominacion: 'Fletes Bianchi', telefono: '11 2233-4455', cuit: '20-34567891-3',
       email: 'bianchi.fletes@gmail.com', direccion: 'Ruta 9 km 45, San Justo',
-      esEmpresa: true, descuentoPct: 5, facturacion: 'INTERNA', cuentaCorrienteHabilitada: false,
+      esEmpresa: true, facturacion: 'INTERNA', cuentaCorrienteHabilitada: false,
       vehiculos: { create: [{ tipo: 'CAMION', subtipo: 'Chasis', marca: 'Iveco', modelo: 'Tector', patente: 'AB 733 PL' }] },
     },
+  });
+
+  // Precios diferenciales de ejemplo (reemplazan al viejo % de descuento
+  // global): cada empresa tiene un precio negociado puntual para algunos de
+  // sus servicios habituales, no un descuento parejo en todo.
+  const lavadoExteriorSemi = await prisma.servicio.findFirstOrThrow({
+    where: { nombre: 'Lavado exterior', vehiculo: 'CAMION', subtipo: 'Semirremolque' },
+  });
+  const lavadoCompletoSemi = await prisma.servicio.findFirstOrThrow({
+    where: { nombre: 'Lavado completo', vehiculo: 'CAMION', subtipo: 'Semirremolque' },
+  });
+  const lavadoChasisBajosChasis = await prisma.servicio.findFirstOrThrow({
+    where: { nombre: 'Lavado de chasis (bajos)', vehiculo: 'CAMION', subtipo: 'Chasis' },
+  });
+  await prisma.precioEmpresa.createMany({
+    data: [
+      { clienteId: cordillera.id, servicioId: lavadoExteriorSemi.id, precio: 9000 },
+      { clienteId: cordillera.id, servicioId: lavadoCompletoSemi.id, precio: 14000 },
+      { clienteId: bianchi.id, servicioId: lavadoChasisBajosChasis.id, precio: 4750 },
+    ],
   });
 
   console.log(`Servicios y clientes de ejemplo cargados (${[marcelo, julieta, cordillera, bianchi].length} clientes).`);

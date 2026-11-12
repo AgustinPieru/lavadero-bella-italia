@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Stack, Alert, Divider } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Stack, Alert, Divider, Typography } from '@mui/material';
 import { useClientes, Cliente, TipoFacturacion } from '@/features/clientes/api/useClientes';
 import { useMarcarComoEmpresa, useActualizarEmpresa } from '../api/useEmpresas';
 
@@ -9,7 +9,7 @@ interface Props {
   empresa?: Cliente; // si viene, es edición de una empresa ya marcada
 }
 
-const emptyForm = { clienteId: '' as number | '', descuentoPct: '', facturacion: 'INTERNA' as TipoFacturacion, cuentaCorrienteHabilitada: false };
+const emptyForm = { clienteId: '' as number | '', facturacion: 'INTERNA' as TipoFacturacion, cuentaCorrienteHabilitada: false };
 
 // "Marcar como empresa" = elegir un cliente ya registrado (particular o sin
 // clasificar) y cargarle los datos de negocio. No se crea un cliente nuevo
@@ -26,7 +26,6 @@ export default function EmpresaFormDialog({ open, onClose, empresa }: Props) {
     if (empresa) {
       setForm({
         clienteId: empresa.id,
-        descuentoPct: empresa.descuentoPct != null ? String(empresa.descuentoPct) : '',
         facturacion: empresa.facturacion ?? 'INTERNA',
         cuentaCorrienteHabilitada: empresa.cuentaCorrienteHabilitada,
       });
@@ -43,7 +42,6 @@ export default function EmpresaFormDialog({ open, onClose, empresa }: Props) {
   const handleSubmit = async () => {
     if (!valid) return;
     const data = {
-      descuentoPct: form.descuentoPct ? Number(form.descuentoPct) : undefined,
       facturacion: form.facturacion,
       cuentaCorrienteHabilitada: form.cuentaCorrienteHabilitada,
     };
@@ -84,14 +82,6 @@ export default function EmpresaFormDialog({ open, onClose, empresa }: Props) {
           <Divider />
 
           <TextField
-            label="Descuento (%)"
-            type="number"
-            value={form.descuentoPct}
-            onChange={(e) => setForm((f) => ({ ...f, descuentoPct: e.target.value }))}
-            fullWidth
-            inputProps={{ min: 0, max: 100 }}
-          />
-          <TextField
             select
             label="Facturación"
             value={form.facturacion}
@@ -111,6 +101,12 @@ export default function EmpresaFormDialog({ open, onClose, empresa }: Props) {
             <MenuItem value="si">Habilitada</MenuItem>
             <MenuItem value="no">No habilitada</MenuItem>
           </TextField>
+
+          {editing && (
+            <Typography variant="caption" color="text.secondary">
+              Los precios diferenciales por servicio se cargan desde la fila expandible de esta empresa en el listado.
+            </Typography>
+          )}
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>

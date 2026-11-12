@@ -15,7 +15,8 @@
     "db:migrate": "npx prisma migrate dev",
     "db:migrate:prod": "npx prisma migrate deploy",
     "db:studio": "npx prisma studio",
-    "db:seed": "npx prisma db seed"
+    "db:seed": "npx prisma db seed",
+    "import:cuenta-corriente": "ts-node scripts/importCuentaCorriente.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
@@ -59,6 +60,7 @@
     "nodemon": "^3.1.4",
     "prisma": "^5.22.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "xlsx": "^0.18.5"
   }
 }

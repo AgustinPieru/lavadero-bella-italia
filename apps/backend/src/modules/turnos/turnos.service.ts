@@ -10,11 +10,12 @@ function parseFecha(fecha: string): Date {
   return new Date(`${fecha}T00:00:00.000Z`);
 }
 
-// Precio de lista del servicio, con el descuento de empresa del cliente
-// dueño del vehículo aplicado si corresponde (ver Etapa 3e: Empresas).
-// Se llama al crear/editar el turno y el resultado queda guardado en
-// precioNeto — un cambio posterior de precio o de % de descuento no debe
-// alterar turnos ya cargados.
+// Precio de lista del servicio, salvo que el cliente dueño del vehículo sea
+// una empresa con un precio diferencial cargado para ESE servicio puntual
+// (ver Etapa 3e: Empresas / PrecioEmpresa). Se llama al crear/editar el
+// turno y el resultado queda guardado en precioNeto — un cambio posterior
+// del precio de lista o del precio diferencial no debe alterar turnos ya
+// cargados.
 export async function calcularPrecioNeto(vehiculoId: number, servicioId: number): Promise<number> {
   const [vehiculo, servicio] = await Promise.all([
     prisma.vehiculo.findUnique({ where: { id: vehiculoId }, include: { cliente: true } }),
@@ -23,9 +24,11 @@ export async function calcularPrecioNeto(vehiculoId: number, servicioId: number)
   if (!vehiculo) throw { status: 404, message: 'Vehículo no encontrado', code: 'NOT_FOUND' };
   if (!servicio) throw { status: 404, message: 'Servicio no encontrado', code: 'NOT_FOUND' };
 
-  const descuentoPct = vehiculo.cliente.esEmpresa ? vehiculo.cliente.descuentoPct ?? 0 : 0;
-  if (!descuentoPct) return servicio.precio;
-  return redondear2(servicio.precio * (1 - descuentoPct / 100));
+  if (!vehiculo.cliente.esEmpresa) return servicio.precio;
+  const precioEmpresa = await prisma.precioEmpresa.findUnique({
+    where: { clienteId_servicioId: { clienteId: vehiculo.cliente.id, servicioId } },
+  });
+  return precioEmpresa ? redondear2(precioEmpresa.precio) : servicio.precio;
 }
 
 export async function getTurnosDelDia(fecha: string) {

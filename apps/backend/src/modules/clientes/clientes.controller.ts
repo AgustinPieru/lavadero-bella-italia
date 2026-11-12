@@ -144,3 +144,22 @@ export async function quitarEmpresa(req: AuthRequest, res: Response): Promise<vo
     res.status(err.status || 500).json({ error: err.message, code: err.code });
   }
 }
+
+export async function setPrecioEmpresa(req: AuthRequest, res: Response): Promise<void> {
+  if (!validate(req, res)) return;
+  try {
+    const cliente = await service.setPrecioEmpresa(parseInt(req.params.id), parseInt(req.params.servicioId), req.body.precio);
+    res.json(cliente);
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+}
+
+export async function quitarPrecioEmpresa(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const cliente = await service.quitarPrecioEmpresa(parseInt(req.params.id), parseInt(req.params.servicioId));
+    res.json(cliente);
+  } catch (err: any) {
+    res.status(err.status || 500).json({ error: err.message, code: err.code });
+  }
+}

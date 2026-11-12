@@ -71,24 +71,29 @@ enum TipoFacturacion {
 }
 
 model Cliente {
-  id                        Int              @id @default(autoincrement())
-  denominacion              String
-  telefono                  String
-  cuit                      String?
-  email                     String?
-  direccion                 String?
-  activo                    Boolean          @default(true) // "baja" = desactivar, no borrar (preserva el historial de turnos)
+  id                         Int                         @id @default(autoincrement())
+  denominacion               String
+  telefono                   String
+  cuit                       String?
+  email                      String?
+  direccion                  String?
+  activo                     Boolean                     @default(true) // "baja" = desactivar, no borrar (preserva el historial de turnos)
   // Etapa 3e (Empresas): una empresa ES un Cliente con estos campos de negocio
   // cargados — no hay una tabla aparte. esEmpresa controla si se muestra en
-  // la pantalla de Empresas y habilita descuento/facturación/cuenta corriente.
-  esEmpresa                 Boolean          @default(false) @map("es_empresa")
-  descuentoPct              Int?             @map("descuento_pct")
-  facturacion               TipoFacturacion?
-  cuentaCorrienteHabilitada Boolean          @default(false) @map("cuenta_corriente_habilitada")
-  createdAt                 DateTime         @default(now()) @map("created_at")
-  updatedAt                 DateTime         @updatedAt @map("updated_at")
-  vehiculos                 Vehiculo[]
-  facturas                  Factura[]
+  // la pantalla de Empresas y habilita precios diferenciales/facturación/
+  // cuenta corriente. El precio diferencial ya no es un % de descuento
+  // global: se carga precio por precio en PrecioEmpresa (servicio por
+  // servicio), porque cada empresa puede tener una tarifa distinta negociada
+  // para cada servicio.
+  esEmpresa                  Boolean                     @default(false) @map("es_empresa")
+  facturacion                TipoFacturacion?
+  cuentaCorrienteHabilitada  Boolean                     @default(false) @map("cuenta_corriente_habilitada")
+  createdAt                  DateTime                    @default(now()) @map("created_at")
+  updatedAt                  DateTime                    @updatedAt @map("updated_at")
+  vehiculos                  Vehiculo[]
+  facturas                   Factura[]
+  preciosEmpresa             PrecioEmpresa[]
+  movimientosCuentaCorriente MovimientoCuentaCorriente[]
 
   @@map("clientes")
 }
@@ -112,18 +117,39 @@ model Vehiculo {
 }
 
 model Servicio {
-  id          Int          @id @default(autoincrement())
-  nombre      String
-  descripcion String?
-  vehiculo    VehiculoTipo
-  subtipo     String
-  precio      Float // neto, sin IVA — admite centavos
-  activo      Boolean      @default(true)
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
-  turnos      Turno[]
+  id             Int             @id @default(autoincrement())
+  nombre         String
+  descripcion    String?
+  vehiculo       VehiculoTipo
+  subtipo        String
+  precio         Float // neto, sin IVA — admite centavos
+  activo         Boolean         @default(true)
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  turnos         Turno[]
+  preciosEmpresa PrecioEmpresa[]
 
   @@map("servicios")
+}
+
+// Precio diferencial de una empresa para un servicio puntual (reemplaza al
+// viejo % de descuento global): "lavado exterior cuesta $19.000 para la
+// empresa X" en lugar de "la empresa X tiene 5% de descuento en todo".
+// Si una empresa no tiene fila acá para un servicio, paga el precio de
+// lista (Servicio.precio) — ver calcularPrecioNeto en turnos.service.ts.
+model PrecioEmpresa {
+  id         Int      @id @default(autoincrement())
+  clienteId  Int      @map("cliente_id")
+  servicioId Int      @map("servicio_id")
+  precio     Float
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  cliente  Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  servicio Servicio @relation(fields: [servicioId], references: [id], onDelete: Cascade)
+
+  @@unique([clienteId, servicioId])
+  @@map("precios_empresa")
 }
 
 enum Linea {
@@ -223,11 +249,46 @@ model Factura {
   numeroArca  Int?            @map("numero_arca")
   createdAt   DateTime        @default(now()) @map("created_at")
 
-  cliente Cliente @relation(fields: [clienteId], references: [id])
-  turnos  Turno[]
+  cliente                    Cliente                     @relation(fields: [clienteId], references: [id])
+  turnos                     Turno[]
+  movimientosCuentaCorriente MovimientoCuentaCorriente[]
 
   @@index([fecha])
   @@map("facturas")
+}
+
+// ──────────────────────────────────────────────
+// Etapa 3i: Cuenta corriente. Ledger único y continuo por cliente — arranca
+// con la carga histórica (ver scripts/importCuentaCorriente.ts, movimientos
+// sin facturaId porque no hay Turno/Factura real detrás) y de ahí en más se
+// alimenta del flujo normal de Facturas: cerrarDiario postea un DEBE cuando
+// formaPago es CUENTA_CORRIENTE, marcarPagada postea el HABER al cobrarla.
+//
+// `saldo` se guarda (no se recalcula al leer) y es un acumulado en orden de
+// INSERCIÓN (id asc), no en orden de `fecha` — para el historial importado
+// ambos coinciden siempre, pero no hay garantía de eso a futuro si algún día
+// se cierra un diario atrasado fuera de orden. Por eso toda query de este
+// modelo ordena por `id`, nunca por `fecha` (que queda como metadata de
+// visualización). Es append-only a propósito: no hay edición ni borrado de
+// movimientos, porque eso rompería la cadena de saldos acumulados.
+// ──────────────────────────────────────────────
+
+model MovimientoCuentaCorriente {
+  id          Int      @id @default(autoincrement())
+  clienteId   Int      @map("cliente_id")
+  fecha       DateTime @db.Date
+  descripcion String
+  debe        Float    @default(0)
+  haber       Float    @default(0)
+  saldo       Float
+  facturaId   Int?     @map("factura_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  cliente Cliente  @relation(fields: [clienteId], references: [id])
+  factura Factura? @relation(fields: [facturaId], references: [id])
+
+  @@index([clienteId, id])
+  @@map("movimientos_cuenta_corriente")
 }
 
 // ──────────────────────────────────────────────

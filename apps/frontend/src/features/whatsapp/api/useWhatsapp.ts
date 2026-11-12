@@ -7,6 +7,7 @@ export interface EstadoWhatsapp {
   numero: string | null;
   nombre: string | null;
   qrDataUrl: string | null;
+  error: string | null;
 }
 
 export function useEstadoWhatsapp() {

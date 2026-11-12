@@ -3,7 +3,6 @@ import api from '@/lib/axios';
 import { Cliente, TipoFacturacion } from '@/features/clientes/api/useClientes';
 
 export interface EmpresaDataInput {
-  descuentoPct?: number;
   facturacion: TipoFacturacion;
   cuentaCorrienteHabilitada: boolean;
 }
@@ -45,6 +44,24 @@ export function useQuitarEmpresa() {
   const invalidate = useInvalidateEmpresas();
   return useMutation({
     mutationFn: async (clienteId: number) => (await api.patch<Cliente>(`/clientes/${clienteId}/empresa/quitar`)).data,
+    onSuccess: invalidate,
+  });
+}
+
+export function useSetPrecioEmpresa() {
+  const invalidate = useInvalidateEmpresas();
+  return useMutation({
+    mutationFn: async ({ clienteId, servicioId, precio }: { clienteId: number; servicioId: number; precio: number }) =>
+      (await api.put<Cliente>(`/clientes/${clienteId}/empresa/precios/${servicioId}`, { precio })).data,
+    onSuccess: invalidate,
+  });
+}
+
+export function useQuitarPrecioEmpresa() {
+  const invalidate = useInvalidateEmpresas();
+  return useMutation({
+    mutationFn: async ({ clienteId, servicioId }: { clienteId: number; servicioId: number }) =>
+      (await api.delete<Cliente>(`/clientes/${clienteId}/empresa/precios/${servicioId}`)).data,
     onSuccess: invalidate,
   });
 }

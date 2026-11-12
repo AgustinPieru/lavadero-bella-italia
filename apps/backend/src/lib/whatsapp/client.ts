@@ -53,11 +53,16 @@ export interface EstadoWhatsapp {
   numero: string | null;
   nombre: string | null;
   qrDataUrl: string | null;
+  error: string | null;
 }
 
 let client: WwebClient | null = null;
 let ready = false;
 let ultimoQrDataUrl: string | null = null;
+// Se muestra en el admin cuando initialize() nunca llega a emitir el QR
+// (ej. Chromium no pudo levantar) — sin esto el frontend queda con un
+// spinner infinito sin ninguna pista de que algo falló.
+let ultimoErrorInit: string | null = null;
 
 // Nota: se probó lanzar el browser a mano con puppeteer-extra + stealth y
 // conectarlo por WebSocket (browserWSEndpoint) para endurecer la sesión
@@ -75,10 +80,15 @@ function crearCliente(): WwebClient {
     authStrategy: new LocalAuth({ dataPath: '.wwebjs_auth' }),
     puppeteer: {
       headless: whatsappConfig.headless,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      // --disable-dev-shm-usage es necesario en Docker/Railway: el /dev/shm
+      // por default de un contenedor (64MB) no alcanza para Chromium y lo
+      // hace crashear/colgarse en el arranque sin tirar un error claro —
+      // sin este flag, el evento 'qr' nunca llega a dispararse en prod.
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
     },
   });
   nuevo.on('qr', (qr: unknown) => {
+    ultimoErrorInit = null;
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const qrcode = require('qrcode');
     console.log('[WhatsApp] Escaneá este QR con WhatsApp > Dispositivos vinculados > Vincular dispositivo:');
@@ -101,6 +111,7 @@ function crearCliente(): WwebClient {
   nuevo.on('ready', () => {
     ready = true;
     ultimoQrDataUrl = null;
+    ultimoErrorInit = null;
     console.log('[WhatsApp] Sesión lista — ya se pueden enviar mensajes.');
   });
   nuevo.on('disconnected', (razon: unknown) => {
@@ -115,7 +126,15 @@ function crearCliente(): WwebClient {
 export function iniciarWhatsappSiCorresponde(): void {
   if (!whatsappConfig.enabled || client) return;
   client = crearCliente();
-  client.initialize().catch((err) => console.error('[WhatsApp] Error al inicializar:', err));
+  client.initialize().catch((err) => {
+    // Si initialize() nunca llega a emitir 'qr' (ej. Chromium no pudo
+    // levantar en el contenedor), hay que soltar la referencia a este
+    // cliente roto — si no, el chequeo "if (client) return" de arriba deja
+    // el QR trabado para siempre, incluso tras tocar "Generar QR nuevo".
+    console.error('[WhatsApp] Error al inicializar:', err);
+    client = null;
+    ultimoErrorInit = err instanceof Error ? err.message : String(err);
+  });
 }
 
 function esperar(ms: number): Promise<void> {
@@ -139,6 +158,7 @@ export async function cerrarWhatsapp(): Promise<void> {
 // la conexión", no "desvincular el número" (para eso ver desvincularWhatsapp).
 export async function forzarReconexion(): Promise<void> {
   ultimoQrDataUrl = null;
+  ultimoErrorInit = null;
   await cerrarWhatsapp();
   iniciarWhatsappSiCorresponde();
 }
@@ -154,6 +174,7 @@ export async function forzarReconexion(): Promise<void> {
 export async function desvincularWhatsapp(): Promise<void> {
   ready = false;
   ultimoQrDataUrl = null;
+  ultimoErrorInit = null;
   if (client) {
     await client.logout().catch((err) => console.warn('[WhatsApp] logout() no terminó limpio, se fuerza igual:', err));
   }
@@ -185,6 +206,7 @@ export function getEstadoWhatsapp(): EstadoWhatsapp {
     numero: ready ? client?.info?.wid?.user ?? null : null,
     nombre: ready ? client?.info?.pushname ?? null : null,
     qrDataUrl: ready ? null : ultimoQrDataUrl,
+    error: ready ? null : ultimoErrorInit,
   };
 }
 

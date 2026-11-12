@@ -13,6 +13,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useClientes, Cliente } from '@/features/clientes/api/useClientes';
+import { useUpdateVehiculo } from '@/features/clientes/api/useVehiculos';
 import ClienteFormDialog from '@/features/clientes/components/ClienteFormDialog';
 import { useServicios } from '@/features/servicios/api/useServicios';
 import { useCreateTurno, useUpdateTurno, Turno, Linea, FormaPago } from '../api/useTurnos';
@@ -43,6 +44,7 @@ export default function TurnoFormDialog({ open, onClose, fecha, turno }: Props) 
 
   const [clienteId, setClienteId] = useState<number | ''>('');
   const [vehiculoId, setVehiculoId] = useState<number | ''>('');
+  const [patente, setPatente] = useState('');
   const [servicioId, setServicioId] = useState<number | ''>('');
   const [hora, setHora] = useState(HORAS_AGENDA[0]);
   const [linea, setLinea] = useState<Linea>('A');
@@ -60,6 +62,16 @@ export default function TurnoFormDialog({ open, onClose, fecha, turno }: Props) 
   const vehiculoSeleccionado = vehiculosDelCliente.find((v) => v.id === vehiculoId);
 
   const { data: servicios } = useServicios(vehiculoSeleccionado?.tipo, vehiculoSeleccionado?.subtipo);
+  const updateVehiculo = useUpdateVehiculo(clienteSeleccionado?.id ?? 0);
+
+  // La patente se carga/corrige acá (al momento del turno) y no en el alta
+  // del cliente: un cliente puede tener muchos vehículos y no tiene sentido
+  // pedir todas las patentes de entrada. Se resincroniza con la del
+  // vehículo cada vez que se elige uno distinto.
+  useEffect(() => {
+    if (!open) return;
+    setPatente(vehiculoSeleccionado?.patente ?? '');
+  }, [open, vehiculoId, vehiculoSeleccionado?.patente]);
 
   // Reinicia (o precarga, si es edición) el formulario cada vez que se abre.
   useEffect(() => {
@@ -109,6 +121,10 @@ export default function TurnoFormDialog({ open, onClose, fecha, turno }: Props) 
       setError('Completá cliente, vehículo y servicio');
       return;
     }
+    if (!patente.trim()) {
+      setError('Completá la patente del vehículo');
+      return;
+    }
     const data = {
       hora,
       linea,
@@ -119,6 +135,18 @@ export default function TurnoFormDialog({ open, onClose, fecha, turno }: Props) 
       facturar,
     };
     try {
+      if (vehiculoSeleccionado && patente.trim() !== (vehiculoSeleccionado.patente ?? '')) {
+        await updateVehiculo.mutateAsync({
+          id: vehiculoSeleccionado.id,
+          data: {
+            tipo: vehiculoSeleccionado.tipo,
+            subtipo: vehiculoSeleccionado.subtipo,
+            marca: vehiculoSeleccionado.marca ?? undefined,
+            modelo: vehiculoSeleccionado.modelo ?? undefined,
+            patente: patente.trim(),
+          },
+        });
+      }
       if (editing) {
         await updateTurno.mutateAsync({ id: turno.id, data });
       } else {
@@ -130,12 +158,13 @@ export default function TurnoFormDialog({ open, onClose, fecha, turno }: Props) 
     }
   };
 
-  const saving = createTurno.isPending || updateTurno.isPending;
+  const saving = createTurno.isPending || updateTurno.isPending || updateVehiculo.isPending;
   const servicioSeleccionado = servicios?.find((s) => s.id === servicioId);
-  const descuentoPct = clienteSeleccionado?.esEmpresa ? clienteSeleccionado.descuentoPct ?? 0 : 0;
-  const precioConDescuento = servicioSeleccionado
-    ? Math.round(servicioSeleccionado.precio * (1 - descuentoPct / 100))
-    : 0;
+  const precioEmpresa =
+    clienteSeleccionado?.esEmpresa && servicioId
+      ? clienteSeleccionado.preciosEmpresa.find((p) => p.servicioId === servicioId)
+      : undefined;
+  const precioFinal = precioEmpresa?.precio ?? servicioSeleccionado?.precio ?? 0;
 
   return (
     <>
@@ -177,6 +206,16 @@ export default function TurnoFormDialog({ open, onClose, fecha, turno }: Props) 
             </TextField>
 
             <TextField
+              label="Patente"
+              value={patente}
+              onChange={(e) => setPatente(e.target.value)}
+              required
+              fullWidth
+              disabled={!vehiculoId}
+              helperText="Se carga o corrige acá — no en el alta del cliente."
+            />
+
+            <TextField
               select
               label="Servicio"
               value={servicioId}
@@ -193,10 +232,10 @@ export default function TurnoFormDialog({ open, onClose, fecha, turno }: Props) 
             {servicioSeleccionado && (
               <Typography variant="caption" color="text.secondary" mt={-1.5}>
                 Precio neto, sin IVA.
-                {descuentoPct > 0 && (
+                {precioEmpresa && (
                   <>
                     {' '}
-                    Con el {descuentoPct}% de descuento de empresa: <strong>{formatPesos(precioConDescuento)}</strong>.
+                    Precio diferencial de empresa: <strong>{formatPesos(precioFinal)}</strong>.
                   </>
                 )}
               </Typography>

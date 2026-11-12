@@ -71,14 +71,21 @@ export default function WhatsappEstadoPage() {
                   alt="QR para vincular WhatsApp"
                   sx={{ width: 240, height: 240, borderRadius: 2, border: '1px solid', borderColor: 'divider', mb: 2 }}
                 />
+              ) : estado.error && !reconectar.isPending ? (
+                <Box sx={{ width: 240, mx: 'auto', mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Alert severity="error" sx={{ textAlign: 'left', width: '100%' }}>
+                    No se pudo generar el QR: {estado.error}
+                  </Alert>
+                </Box>
               ) : (
                 <Box sx={{ width: 240, height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2 }}>
                   <CircularProgress size={28} />
                 </Box>
               )}
               <Typography variant="body2" color="text.secondary" mb={2}>
-                En el celular del lavadero: WhatsApp → Ajustes → Dispositivos vinculados → Vincular un dispositivo, y
-                escaneá este código. Si tardaste en escanear puede haber vencido — pedí uno nuevo antes de intentar.
+                {estado.error && !reconectar.isPending
+                  ? 'Pedí un QR nuevo con el botón de abajo. Si el error persiste, puede ser un problema del servidor.'
+                  : 'En el celular del lavadero: WhatsApp → Ajustes → Dispositivos vinculados → Vincular un dispositivo, y escaneá este código. Si tardaste en escanear puede haber vencido — pedí uno nuevo antes de intentar.'}
               </Typography>
               <Button
                 variant="contained"

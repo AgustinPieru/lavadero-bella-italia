@@ -11,6 +11,10 @@ services:
       # Host 5433 -> container 5432, para no chocar con otro Postgres local
       # (ej. el de Akoch-inmobiliaria) que suele usar el 5432 por defecto.
       - '5433:5432'
+      # Puerto alternativo temporal: un túnel SSH local a veces toma el
+      # 5433 antes que Docker, dejando este servicio inalcanzable desde el
+      # host. TODO: sacar esta línea cuando ya no haga falta.
+      - '5434:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

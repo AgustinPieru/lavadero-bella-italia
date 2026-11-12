@@ -22,7 +22,12 @@ export interface GetClientesFilters {
   incluirInactivos?: boolean;
 }
 
-const CLIENTE_INCLUDE = { vehiculos: { orderBy: { id: 'asc' as const } } };
+const CLIENTE_INCLUDE = {
+  vehiculos: { orderBy: { id: 'asc' as const } },
+  // Se incluye siempre (no solo en /empresas) porque el turno necesita saber
+  // si el cliente tiene un precio diferencial para el servicio elegido.
+  preciosEmpresa: { include: { servicio: true }, orderBy: { id: 'asc' as const } },
+};
 
 export async function getClientes(filters: GetClientesFilters = {}) {
   return prisma.cliente.findMany({
@@ -115,11 +120,12 @@ export async function reactivarVehiculo(id: number) {
 
 // ──────────────────────────────────────────────
 // Empresas — Etapa 3e. Una empresa ES un Cliente con estos campos de negocio
-// cargados (ver schema.prisma), no una tabla aparte.
+// cargados (ver schema.prisma), no una tabla aparte. El precio diferencial
+// ya no es un % de descuento global: se carga precio por precio, servicio
+// por servicio, en PrecioEmpresa.
 // ──────────────────────────────────────────────
 
 export interface EmpresaDataInput {
-  descuentoPct?: number;
   facturacion: TipoFacturacion;
   cuentaCorrienteHabilitada: boolean;
 }
@@ -151,9 +157,40 @@ export async function actualizarEmpresa(clienteId: number, data: EmpresaDataInpu
 
 export async function quitarEmpresa(clienteId: number) {
   await findOrThrow(clienteId);
+  // Al dejar de ser empresa se borran sus precios diferenciales: si se
+  // vuelve a marcar como empresa después, arranca de cero.
+  await prisma.precioEmpresa.deleteMany({ where: { clienteId } });
   return prisma.cliente.update({
     where: { id: clienteId },
-    data: { esEmpresa: false, descuentoPct: null, facturacion: null, cuentaCorrienteHabilitada: false },
+    data: { esEmpresa: false, facturacion: null, cuentaCorrienteHabilitada: false },
     include: CLIENTE_INCLUDE,
   });
+}
+
+async function findEmpresaOrThrow(clienteId: number) {
+  const cliente = await findOrThrow(clienteId);
+  if (!cliente.esEmpresa) {
+    throw { status: 400, message: 'Este cliente no está marcado como empresa', code: 'NOT_EMPRESA' };
+  }
+  return cliente;
+}
+
+export async function setPrecioEmpresa(clienteId: number, servicioId: number, precio: number) {
+  await findEmpresaOrThrow(clienteId);
+  const servicio = await prisma.servicio.findUnique({ where: { id: servicioId } });
+  if (!servicio) {
+    throw { status: 404, message: 'Servicio no encontrado', code: 'NOT_FOUND' };
+  }
+  await prisma.precioEmpresa.upsert({
+    where: { clienteId_servicioId: { clienteId, servicioId } },
+    create: { clienteId, servicioId, precio },
+    update: { precio },
+  });
+  return prisma.cliente.findUniqueOrThrow({ where: { id: clienteId }, include: CLIENTE_INCLUDE });
+}
+
+export async function quitarPrecioEmpresa(clienteId: number, servicioId: number) {
+  await findEmpresaOrThrow(clienteId);
+  await prisma.precioEmpresa.deleteMany({ where: { clienteId, servicioId } });
+  return prisma.cliente.findUniqueOrThrow({ where: { id: clienteId }, include: CLIENTE_INCLUDE });
 }

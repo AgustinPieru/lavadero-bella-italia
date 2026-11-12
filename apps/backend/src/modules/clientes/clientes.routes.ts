@@ -16,6 +16,8 @@ import {
   marcarComoEmpresa,
   actualizarEmpresa,
   quitarEmpresa,
+  setPrecioEmpresa,
+  quitarPrecioEmpresa,
 } from './clientes.controller';
 
 const router = Router();
@@ -41,8 +43,9 @@ const vehiculoAnidadoValidators = [
 const empresaValidators = [
   body('facturacion').isIn(['ARCA', 'INTERNA']).withMessage('Tipo de facturación inválido'),
   body('cuentaCorrienteHabilitada').isBoolean().withMessage('Valor inválido'),
-  body('descuentoPct').optional({ values: 'null' }).isInt({ min: 0, max: 100 }).withMessage('Descuento inválido'),
 ];
+
+const precioEmpresaValidators = [body('precio').isFloat({ min: 0.01 }).withMessage('Precio inválido')];
 
 // Rutas específicas ANTES de '/:id' para que Express no confunda "empresas"
 // con un id de cliente.
@@ -63,5 +66,8 @@ router.patch('/:id/vehiculos/:vehiculoId/reactivar', reactivarVehiculo);
 router.patch('/:id/empresa', empresaValidators, marcarComoEmpresa);
 router.put('/:id/empresa', empresaValidators, actualizarEmpresa);
 router.patch('/:id/empresa/quitar', quitarEmpresa);
+
+router.put('/:id/empresa/precios/:servicioId', precioEmpresaValidators, setPrecioEmpresa);
+router.delete('/:id/empresa/precios/:servicioId', quitarPrecioEmpresa);
 
 export default router;
