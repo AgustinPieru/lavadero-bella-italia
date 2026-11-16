@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, MouseEvent } from 'react';
 import {
   Box,
   Typography,
@@ -12,11 +12,13 @@ import {
   Chip,
   TextField,
   MenuItem,
+  Menu,
   Button,
   IconButton,
   CircularProgress,
   Stack,
 } from '@mui/material';
+import { MedioPago } from '@/features/caja/api/useCaja';
 import { Visibility as VisibilityIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
 import { useFacturas, useMarcarPagada, useSaldoPendiente, comprobanteLabel, comprobanteColor, agruparFacturasPorClienteYDia } from '../api/useFacturas';
 import { useClientes } from '@/features/clientes/api/useClientes';
@@ -26,6 +28,8 @@ import { formatPesos } from '@/lib/format';
 export default function FacturasListPage() {
   const [clienteId, setClienteId] = useState<number | ''>('');
   const [detailId, setDetailId] = useState<number | undefined>(undefined);
+  const [cobrarAnchor, setCobrarAnchor] = useState<HTMLElement | null>(null);
+  const [cobrarIds, setCobrarIds] = useState<number[]>([]);
 
   const { data: clientes } = useClientes({ incluirInactivos: true });
   const { data: facturas, isLoading } = useFacturas(clienteId ? { clienteId } : {});
@@ -34,6 +38,19 @@ export default function FacturasListPage() {
   const marcarPagada = useMarcarPagada();
 
   const clienteSeleccionado = clientes?.find((c) => c.id === clienteId);
+
+  const handleAbrirCobrar = (e: MouseEvent<HTMLElement>, ids: number[]) => {
+    setCobrarAnchor(e.currentTarget);
+    setCobrarIds(ids);
+  };
+  const handleCerrarCobrar = () => {
+    setCobrarAnchor(null);
+    setCobrarIds([]);
+  };
+  const handleCobrar = (medioPago: MedioPago) => {
+    cobrarIds.forEach((id) => marcarPagada.mutate({ id, medioPago }));
+    handleCerrarCobrar();
+  };
 
   return (
     <Box>
@@ -129,7 +146,12 @@ export default function FacturasListPage() {
                             <Button
                               size="small"
                               startIcon={<CheckCircleIcon fontSize="small" />}
-                              onClick={() => g.facturas.filter((f) => f.estado === 'PENDIENTE').forEach((f) => marcarPagada.mutate(f.id))}
+                              onClick={(e) =>
+                                handleAbrirCobrar(
+                                  e,
+                                  g.facturas.filter((f) => f.estado === 'PENDIENTE').map((f) => f.id)
+                                )
+                              }
                             >
                               Cobrar
                             </Button>
@@ -146,6 +168,14 @@ export default function FacturasListPage() {
       )}
 
       <FacturaDetailDialog open={!!detailId} onClose={() => setDetailId(undefined)} facturaId={detailId} />
+
+      <Menu anchorEl={cobrarAnchor} open={!!cobrarAnchor} onClose={handleCerrarCobrar}>
+        <Typography variant="caption" color="text.secondary" sx={{ px: 2, py: 0.5, display: 'block' }}>
+          ¿Cómo se cobró?
+        </Typography>
+        <MenuItem onClick={() => handleCobrar('EFECTIVO')}>Efectivo</MenuItem>
+        <MenuItem onClick={() => handleCobrar('CUENTA')}>Transferencia / cuenta</MenuItem>
+      </Menu>
     </Box>
   );
 }

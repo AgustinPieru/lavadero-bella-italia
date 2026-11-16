@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { validationResult } from 'express-validator';
 import { AuthRequest } from '../../middleware/auth.middleware';
 import * as service from './facturas.service';
 import { generarOrdenTrabajoPdf } from './ordenTrabajo.pdf';
@@ -33,8 +34,13 @@ export async function getFactura(req: AuthRequest, res: Response): Promise<void>
 }
 
 export async function marcarPagada(req: AuthRequest, res: Response): Promise<void> {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    res.status(422).json({ error: 'Datos inválidos', code: 'VALIDATION_ERROR', details: errors.array() });
+    return;
+  }
   try {
-    const factura = await service.marcarPagada(parseInt(req.params.id));
+    const factura = await service.marcarPagada(parseInt(req.params.id), req.body.medioPago);
     res.json(factura);
   } catch (err: any) {
     res.status(err.status || 500).json({ error: err.message, code: err.code });

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { Cliente, TipoFacturacion, Vehiculo } from '@/features/clientes/api/useClientes';
 import { FormaPago } from '@/features/turnos/api/useTurnos';
+import { MedioPago } from '@/features/caja/api/useCaja';
 import { Servicio } from '@/features/servicios/api/useServicios';
 
 export type EstadoFactura = 'PENDIENTE' | 'PAGADA';
@@ -165,7 +166,8 @@ export function useCerrarDiario() {
 export function useMarcarPagada() {
   const invalidate = useInvalidateFacturas();
   return useMutation({
-    mutationFn: async (id: number) => (await api.patch<Factura>(`/facturas/${id}/pagar`)).data,
+    mutationFn: async ({ id, medioPago }: { id: number; medioPago: MedioPago }) =>
+      (await api.patch<Factura>(`/facturas/${id}/pagar`, { medioPago })).data,
     onSuccess: invalidate,
   });
 }

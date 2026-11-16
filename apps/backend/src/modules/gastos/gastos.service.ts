@@ -1,11 +1,12 @@
 import prisma from '../../lib/prisma';
-import { CategoriaGasto } from '@prisma/client';
+import { CategoriaGasto, MedioPago } from '@prisma/client';
 
 export interface GastoInput {
   fecha: string;
   categoria: CategoriaGasto;
   monto: number;
   descripcion?: string;
+  medioPago: MedioPago;
 }
 
 function parseFecha(fecha: string) {
@@ -26,6 +27,7 @@ export async function createGasto(input: GastoInput) {
       categoria: input.categoria,
       monto: input.monto,
       descripcion: input.descripcion,
+      medioPago: input.medioPago,
     },
   });
 }

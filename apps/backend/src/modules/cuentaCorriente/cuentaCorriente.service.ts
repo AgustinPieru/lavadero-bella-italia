@@ -1,4 +1,5 @@
 import prisma from '../../lib/prisma';
+import { MedioPago } from '@prisma/client';
 import { redondear2 } from '../../lib/money';
 
 // Posteo atómico: lee el último saldo del cliente y escribe el movimiento
@@ -13,6 +14,7 @@ export async function registrarMovimiento(params: {
   debe?: number;
   haber?: number;
   facturaId?: number;
+  medioPago?: MedioPago;
 }) {
   return prisma.$transaction(async (tx) => {
     const ultimo = await tx.movimientoCuentaCorriente.findFirst({
@@ -32,6 +34,7 @@ export async function registrarMovimiento(params: {
         haber,
         saldo,
         facturaId: params.facturaId,
+        medioPago: params.medioPago,
       },
     });
   });

@@ -274,15 +274,20 @@ model Factura {
 // ──────────────────────────────────────────────
 
 model MovimientoCuentaCorriente {
-  id          Int      @id @default(autoincrement())
-  clienteId   Int      @map("cliente_id")
-  fecha       DateTime @db.Date
+  id          Int        @id @default(autoincrement())
+  clienteId   Int        @map("cliente_id")
+  fecha       DateTime   @db.Date
   descripcion String
-  debe        Float    @default(0)
-  haber       Float    @default(0)
+  debe        Float      @default(0)
+  haber       Float      @default(0)
   saldo       Float
-  facturaId   Int?     @map("factura_id")
-  createdAt   DateTime @default(now()) @map("created_at")
+  // Solo tiene sentido en movimientos de cobro (haber > 0): ¿entró a la
+  // cuenta bancaria o en efectivo? Null en los débitos (facturación, no es
+  // un movimiento de plata real) y en los movimientos importados del
+  // historial — ver nota en Gasto.medioPago.
+  medioPago   MedioPago? @map("medio_pago")
+  facturaId   Int?       @map("factura_id")
+  createdAt   DateTime   @default(now()) @map("created_at")
 
   cliente Cliente  @relation(fields: [clienteId], references: [id])
   factura Factura? @relation(fields: [facturaId], references: [id])
@@ -338,16 +343,49 @@ enum CategoriaGasto {
   OTRO
 }
 
+// Etapa 3j (Caja): de dónde sale/entra la plata — distingue la cuenta
+// bancaria del efectivo en mano. Nullable en Gasto y en
+// MovimientoCuentaCorriente porque los registros de antes de esta etapa no
+// lo tienen (y no hace falta completarlo a mano: quedan fuera del cálculo
+// de saldoCaja, que solo mira movimientos desde la fecha de SaldoInicialCaja
+// en adelante — ver caja.service.ts).
+enum MedioPago {
+  CUENTA
+  EFECTIVO
+}
+
 model Gasto {
   id          Int            @id @default(autoincrement())
   fecha       DateTime       @db.Date
   categoria   CategoriaGasto
   monto       Float
   descripcion String?
+  medioPago   MedioPago?     @map("medio_pago")
   createdAt   DateTime       @default(now()) @map("created_at")
 
   @@index([fecha])
   @@map("gastos")
+}
+
+// ──────────────────────────────────────────────
+// Etapa 3j: Saldo de caja. Fila única (id fijo 1) que guarda cuánto había en
+// cuenta bancaria y en efectivo al momento de arrancar a trackear la caja en
+// el sistema — lo que el dueño ya tenía antes de esto no se puede reconstruir
+// movimiento a movimiento, así que se carga como punto de partida. A partir
+// de esa fecha, caja.service.ts suma/resta turnos cobrados, gastos y cobros
+// de cuenta corriente para dar el saldo actual. Editable (no es un registro
+// histórico inmutable): si el dueño se equivocó al cargarlo, se corrige acá
+// mismo, no con un movimiento compensatorio.
+// ──────────────────────────────────────────────
+model SaldoInicialCaja {
+  id        Int      @id @default(autoincrement())
+  fecha     DateTime @db.Date
+  cuenta    Float
+  efectivo  Float
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("saldo_inicial_caja")
 }
 
 // ──────────────────────────────────────────────

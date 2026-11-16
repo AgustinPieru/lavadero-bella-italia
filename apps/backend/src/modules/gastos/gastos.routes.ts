@@ -11,6 +11,7 @@ const gastoValidators = [
   body('fecha').trim().notEmpty().withMessage('Fecha requerida'),
   body('categoria').isIn(['SUELDOS', 'IMPUESTOS', 'SERVICIOS', 'INSUMOS', 'OTRO']).withMessage('Categoría inválida'),
   body('monto').isFloat({ min: 0.01 }).withMessage('Monto inválido'),
+  body('medioPago').isIn(['CUENTA', 'EFECTIVO']).withMessage('Medio de pago inválido'),
 ];
 
 router.get('/', getGastos);

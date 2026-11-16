@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import { Download as DownloadIcon } from '@mui/icons-material';
 import { useReporte, useDescargarReportePdf } from '../api/useReportes';
+import CajaCard from '@/features/caja/components/CajaCard';
 import { isoDate, formatPesos } from '@/lib/format';
 
 type Preset = 'hoy' | '7d' | '30d' | 'mes' | 'custom';
@@ -114,6 +115,8 @@ export default function ReportesPage() {
           Exportar PDF
         </Button>
       </Stack>
+
+      <CajaCard />
 
       <Card sx={{ mb: 3 }}>
         <CardContent>

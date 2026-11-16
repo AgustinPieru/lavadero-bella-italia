@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 
 export type CategoriaGasto = 'SUELDOS' | 'IMPUESTOS' | 'SERVICIOS' | 'INSUMOS' | 'OTRO';
+export type MedioPago = 'CUENTA' | 'EFECTIVO';
 
 export interface Gasto {
   id: number;
@@ -9,6 +10,7 @@ export interface Gasto {
   categoria: CategoriaGasto;
   monto: number;
   descripcion: string | null;
+  medioPago: MedioPago | null;
   createdAt: string;
 }
 
@@ -17,6 +19,7 @@ export interface GastoInput {
   categoria: CategoriaGasto;
   monto: number;
   descripcion?: string;
+  medioPago: MedioPago;
 }
 
 function gastosKey(fecha: string) {

@@ -18,7 +18,7 @@ import {
   MenuItem,
 } from '@mui/material';
 import { ChevronLeft, ChevronRight, Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { useGastosDelDia, useCreateGasto, useDeleteGasto, CategoriaGasto } from '../api/useGastos';
+import { useGastosDelDia, useCreateGasto, useDeleteGasto, CategoriaGasto, MedioPago } from '../api/useGastos';
 import { isoDate, formatFechaAgenda, formatPesos } from '@/lib/format';
 
 const CATEGORIA_LABEL: Record<CategoriaGasto, string> = {
@@ -29,11 +29,17 @@ const CATEGORIA_LABEL: Record<CategoriaGasto, string> = {
   OTRO: 'Otro',
 };
 
+const MEDIO_PAGO_LABEL: Record<MedioPago, string> = {
+  EFECTIVO: 'Efectivo',
+  CUENTA: 'Cuenta',
+};
+
 export default function GastosPage() {
   const [offset, setOffset] = useState(0);
   const [categoria, setCategoria] = useState<CategoriaGasto>('SUELDOS');
   const [monto, setMonto] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [medioPago, setMedioPago] = useState<MedioPago>('EFECTIVO');
 
   const fechaDate = useMemo(() => {
     const d = new Date();
@@ -52,7 +58,7 @@ export default function GastosPage() {
     const montoNum = parseFloat(monto);
     if (!montoNum || montoNum <= 0) return;
     createGasto.mutate(
-      { fecha, categoria, monto: montoNum, descripcion: descripcion.trim() || undefined },
+      { fecha, categoria, monto: montoNum, descripcion: descripcion.trim() || undefined, medioPago },
       {
         onSuccess: () => {
           setMonto('');
@@ -113,6 +119,20 @@ export default function GastosPage() {
               inputProps={{ step: '0.01' }}
             />
             <TextField
+              select
+              label="Medio de pago"
+              value={medioPago}
+              onChange={(e) => setMedioPago(e.target.value as MedioPago)}
+              size="small"
+              sx={{ minWidth: 150 }}
+            >
+              {Object.entries(MEDIO_PAGO_LABEL).map(([value, label]) => (
+                <MenuItem key={value} value={value}>
+                  {label}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
               label="Descripción"
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
@@ -151,6 +171,7 @@ export default function GastosPage() {
                     <TableRow>
                       <TableCell>Categoría</TableCell>
                       <TableCell>Descripción</TableCell>
+                      <TableCell>Medio de pago</TableCell>
                       <TableCell align="right">Monto</TableCell>
                       <TableCell align="right">Acciones</TableCell>
                     </TableRow>
@@ -162,6 +183,7 @@ export default function GastosPage() {
                           <Chip label={CATEGORIA_LABEL[g.categoria]} size="small" variant="outlined" />
                         </TableCell>
                         <TableCell>{g.descripcion ?? '—'}</TableCell>
+                        <TableCell>{g.medioPago ? MEDIO_PAGO_LABEL[g.medioPago] : '—'}</TableCell>
                         <TableCell align="right" sx={{ fontFamily: 'monospace' }}>
                           {formatPesos(g.monto)}
                         </TableCell>

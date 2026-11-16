@@ -1,4 +1,5 @@
 import prisma from '../../lib/prisma';
+import { MedioPago } from '@prisma/client';
 import * as wsfev1 from '../../lib/arca/wsfev1';
 import { arcaConfig } from '../../lib/arca/config';
 import { enviarDocumento } from '../../lib/whatsapp/client';
@@ -112,7 +113,7 @@ export async function getFactura(id: number) {
 // "ya estaba pendiente" se hace sobre el estado ANTES del update — si se
 // llama dos veces sobre la misma factura (doble click, retry), la segunda
 // vez el update es un no-op pero no vuelve a postear el pago en el ledger.
-export async function marcarPagada(id: number) {
+export async function marcarPagada(id: number, medioPago: MedioPago) {
   const factura = await findOrThrow(id);
   const yaEstabaPendiente = factura.estado === 'PENDIENTE';
   const updated = await prisma.factura.update({ where: { id }, data: { estado: 'PAGADA' }, include: FACTURA_INCLUDE });
@@ -123,6 +124,7 @@ export async function marcarPagada(id: number) {
       descripcion: `Pago factura ${factura.numero}`,
       haber: factura.total,
       facturaId: factura.id,
+      medioPago,
     });
   }
   return updated;
