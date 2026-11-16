@@ -1,4 +1,6 @@
 import prisma from '../../lib/prisma';
+import { redondear2 } from '../../lib/money';
+import { IVA_TASA } from '../facturas/facturas.service';
 
 export interface RangoInput {
   desde: string;
@@ -39,6 +41,10 @@ export async function computeReporte({ desde, hasta }: RangoInput) {
   const noCancelados = turnos.filter((t) => t.estado !== 'CANCELADO');
   const ingresos = completados.reduce((a, t) => a + t.precioNeto, 0);
   const gastosTotal = gastos.reduce((a, g) => a + g.monto, 0);
+  // precioNeto es siempre neto (ver Servicio.precio en schema.prisma) — el
+  // 21% solo corresponde a los turnos que se facturan (mismo criterio que
+  // cerrarDiario en facturas.service.ts), no a los "sin factura".
+  const ivaTotal = redondear2(completados.reduce((a, t) => a + (t.facturar ? t.precioNeto * IVA_TASA : 0), 0));
 
   const gastosPorCategoria: Record<string, number> = {};
   gastos.forEach((g) => {
@@ -77,6 +83,7 @@ export async function computeReporte({ desde, hasta }: RangoInput) {
   return {
     lavadosPorDia,
     ingresos,
+    ivaTotal,
     gastosTotal,
     gastosPorCategoria,
     porFormaPago,

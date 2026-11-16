@@ -16,7 +16,7 @@ function parseFecha(fecha: string): Date {
   return new Date(`${fecha}T00:00:00.000Z`);
 }
 
-const IVA_TASA = 0.21;
+export const IVA_TASA = 0.21;
 
 // Se llama desde "Cerrar control diario" en la Agenda. Agrupa los turnos
 // COMPLETADOs del día por cliente — si un cliente tuvo más de un vehículo

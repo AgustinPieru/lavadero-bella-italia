@@ -81,8 +81,8 @@ function Tile({ label, value, detail, warn }: { label: string; value: string; de
 }
 
 export default function ReportesPage() {
-  const [preset, setPreset] = useState<Preset>('7d');
-  const [custom, setCustom] = useState(rangoPorPreset('7d'));
+  const [preset, setPreset] = useState<Preset>('mes');
+  const [custom, setCustom] = useState(rangoPorPreset('mes'));
 
   const rango = preset === 'custom' ? custom : rangoPorPreset(preset);
   const { data: r, isLoading } = useReporte(rango.desde, rango.hasta);
@@ -168,8 +168,9 @@ export default function ReportesPage() {
       ) : (
         <>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
-            <Tile label="GANANCIA NETA" value={formatPesos(r.ingresos - r.gastosTotal)} detail="Período elegido" />
+            <Tile label="GANANCIA NETA" value={formatPesos(r.ingresos - r.gastosTotal)} detail="Ingresos sin IVA menos gastos" />
             <Tile label="INGRESOS" value={formatPesos(r.ingresos)} detail={`${r.completadosCount} lavados completados`} />
+            <Tile label="TOTAL IVA" value={formatPesos(r.ivaTotal)} detail="Sobre los turnos facturados" />
             <Tile label="GASTOS" value={formatPesos(r.gastosTotal)} detail="Sueldos, insumos, servicios" warn />
             <Tile label="TICKET PROMEDIO" value={formatPesos(ticketProm)} detail="Por lavado completado" />
           </Box>

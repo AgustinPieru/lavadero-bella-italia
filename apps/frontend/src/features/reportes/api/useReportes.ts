@@ -4,6 +4,7 @@ import api from '@/lib/axios';
 export interface Reporte {
   lavadosPorDia: { label: string; cantidad: number }[];
   ingresos: number;
+  ivaTotal: number;
   gastosTotal: number;
   gastosPorCategoria: Record<string, number>;
   porFormaPago: Record<string, { cantidad: number; monto: number }>;

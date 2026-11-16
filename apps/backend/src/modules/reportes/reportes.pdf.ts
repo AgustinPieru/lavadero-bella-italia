@@ -75,6 +75,7 @@ export async function generarReportePdf(res: Response, rango: RangoInput): Promi
   const resumen = [
     ['Ganancia neta', pesos(r.ingresos - r.gastosTotal)],
     ['Ingresos', pesos(r.ingresos)],
+    ['Total IVA', pesos(r.ivaTotal)],
     ['Gastos', pesos(r.gastosTotal)],
     ['Ticket promedio', pesos(ticketProm)],
   ];

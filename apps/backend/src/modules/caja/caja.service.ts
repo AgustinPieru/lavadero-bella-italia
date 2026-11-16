@@ -1,5 +1,6 @@
 import prisma from '../../lib/prisma';
 import { redondear2 } from '../../lib/money';
+import { IVA_TASA } from '../facturas/facturas.service';
 
 export interface SaldoInicialInput {
   fecha: string;
@@ -41,7 +42,7 @@ export async function getSaldoCaja() {
   const [turnos, gastos, cobros] = await Promise.all([
     prisma.turno.findMany({
       where: { estado: 'COMPLETADO', fecha: { gte: inicial.fecha }, formaPago: { not: 'CUENTA_CORRIENTE' } },
-      select: { precioNeto: true, formaPago: true },
+      select: { precioNeto: true, formaPago: true, facturar: true },
     }),
     prisma.gasto.findMany({ where: { fecha: { gte: inicial.fecha } }, select: { monto: true, medioPago: true } }),
     prisma.movimientoCuentaCorriente.findMany({
@@ -54,9 +55,13 @@ export async function getSaldoCaja() {
   let efectivo = inicial.efectivo;
   let sinClasificar = 0;
 
+  // Lo que efectivamente entra en mano es precioNeto + IVA cuando el turno
+  // se factura (misma fórmula que cerrarDiario en facturas.service.ts) —
+  // Turno.precioNeto es siempre neto, nunca el total cobrado.
   turnos.forEach((t) => {
-    if (t.formaPago === 'TRANSFERENCIA') cuenta += t.precioNeto;
-    else efectivo += t.precioNeto; // CONTADO | EFECTIVO
+    const monto = t.facturar ? redondear2(t.precioNeto * (1 + IVA_TASA)) : t.precioNeto;
+    if (t.formaPago === 'TRANSFERENCIA') cuenta += monto;
+    else efectivo += monto; // CONTADO | EFECTIVO
   });
 
   gastos.forEach((g) => {
