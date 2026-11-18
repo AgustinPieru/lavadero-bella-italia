@@ -10,6 +10,7 @@ export interface SaldoCaja {
   efectivo: number;
   total: number;
   sinClasificar: number;
+  cuentaCorrientePendiente: number;
 }
 
 export interface SaldoInicialInput {

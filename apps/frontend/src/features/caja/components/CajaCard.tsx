@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, CardContent, Box, Typography, Button, Stack } from '@mui/material';
+import { Card, CardContent, Box, Typography, Button, Stack, Divider } from '@mui/material';
 import { useSaldoCaja } from '../api/useCaja';
 import { formatPesos } from '@/lib/format';
 import SaldoInicialDialog from './SaldoInicialDialog';
@@ -55,8 +55,21 @@ export default function CajaCard() {
                 </Typography>
               </Box>
             </Box>
+            <Divider sx={{ my: 2 }} />
           </>
         )}
+
+        <Box>
+          <Typography variant="caption" sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
+            CUENTA CORRIENTE
+          </Typography>
+          <Typography variant="h5" fontWeight={800}>
+            {formatPesos(saldo?.cuentaCorrientePendiente ?? 0)}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" display="block">
+            Lo que te deben los clientes — no es plata en caja, es pendiente de cobro
+          </Typography>
+        </Box>
       </CardContent>
 
       <SaldoInicialDialog open={dialogOpen} onClose={() => setDialogOpen(false)} saldo={saldo} />

@@ -47,3 +47,20 @@ export async function getSaldoPorCliente(clienteId: number) {
   });
   return ultimo?.saldo ?? 0;
 }
+
+// Total que te deben entre todos los clientes: el último saldo (por id, no
+// por fecha — ver nota en schema.prisma) de cada cliente, solo el que es a
+// favor del lavadero (GREATEST con 0) — un cliente con crédito a favor
+// (saldo negativo, ej. ACERMA) no resta del total pendiente, es un caso
+// aparte, no "menos deuda de los demás".
+export async function getSaldoTotalPendiente(): Promise<number> {
+  const rows = await prisma.$queryRaw<{ total: number | null }[]>`
+    SELECT COALESCE(SUM(GREATEST(saldo, 0)), 0)::float AS total
+    FROM (
+      SELECT DISTINCT ON (cliente_id) saldo
+      FROM movimientos_cuenta_corriente
+      ORDER BY cliente_id, id DESC
+    ) ultimos
+  `;
+  return redondear2(rows[0]?.total ?? 0);
+}

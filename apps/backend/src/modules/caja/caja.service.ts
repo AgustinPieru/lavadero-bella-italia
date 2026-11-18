@@ -1,6 +1,7 @@
 import prisma from '../../lib/prisma';
 import { redondear2 } from '../../lib/money';
 import { IVA_TASA } from '../facturas/facturas.service';
+import { getSaldoTotalPendiente } from '../cuentaCorriente/cuentaCorriente.service';
 
 export interface SaldoInicialInput {
   fecha: string;
@@ -34,9 +35,17 @@ export async function setSaldoInicial(input: SaldoInicialInput) {
 // tampoco mueven ninguno de los dos saldos — se devuelven aparte en
 // `sinClasificar` para que no desaparezcan silenciosamente del reporte.
 export async function getSaldoCaja() {
-  const inicial = await getSaldoInicial();
+  const [inicial, cuentaCorrientePendiente] = await Promise.all([getSaldoInicial(), getSaldoTotalPendiente()]);
   if (!inicial) {
-    return { configurado: false as const, fechaDesde: null, cuenta: 0, efectivo: 0, total: 0, sinClasificar: 0 };
+    return {
+      configurado: false as const,
+      fechaDesde: null,
+      cuenta: 0,
+      efectivo: 0,
+      total: 0,
+      sinClasificar: 0,
+      cuentaCorrientePendiente,
+    };
   }
 
   const [turnos, gastos, cobros] = await Promise.all([
@@ -83,6 +92,7 @@ export async function getSaldoCaja() {
     efectivo: redondear2(efectivo),
     total: redondear2(cuenta + efectivo),
     sinClasificar: redondear2(sinClasificar),
+    cuentaCorrientePendiente,
   };
 }
 
